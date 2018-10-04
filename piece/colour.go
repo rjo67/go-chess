@@ -9,6 +9,9 @@ const (
 	BLACK
 )
 
+// AllColours to iterate over the colours
+var AllColours = []Colour{WHITE, BLACK}
+
 var colourMapping = []string{"W", "B"}
 
 // ToString returns a letter describing the colour

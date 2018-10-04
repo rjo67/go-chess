@@ -16,7 +16,7 @@ func TestBitset(t *testing.T) {
 	b[5] = 0x04
 	b[6] = 0x02
 	b[7] = 0x01
-	bs := New(b)
+	bs := NewFromByteArray(b)
 	if bs.Val != 72624976668147840 {
 		t.Errorf("expected 72624976668147840 but got %d for bitset\n%s", bs.Val, bs.ToString())
 	}
@@ -40,7 +40,7 @@ func TestIsSet(t *testing.T) {
 	b[2] = 0x20
 	b[1] = 0x40
 	b[0] = 0x80
-	bs := New(b)
+	bs := NewFromByteArray(b)
 	checkBits(t, bs, []uint{8, 15, 22, 29, 36, 43, 50, 57}, true)
 }
 
@@ -62,8 +62,14 @@ func TestSet(t *testing.T) {
 	val1 := bs.Val
 	bs2 := BitSet{Val: 0}
 	bs2.SetSquare(square.E1).SetSquare(square.H4).SetSquare(square.E6)
-	if val1 != bs2.Val {
+	val2 := bs2.Val
+	if val1 != val2 {
 		t.Errorf("got different values for the bitsets. Bitset 1:\n%s\n, Bitset 2:\n%s", bs.ToString(), bs2.ToString())
+	}
+	bs3 := NewFromSquares(square.E1, square.H4, square.E6)
+	val3 := bs3.Val
+	if val2 != val3 {
+		t.Errorf("got different values for the bitsets. Bitset 2:\n%s\n, Bitset 3:\n%s", bs2.ToString(), bs3.ToString())
 	}
 }
 

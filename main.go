@@ -3,12 +3,12 @@ package main
 import (
 	"fmt"
 
-	"github.com/rjo67/chess/bitset"
+	"github.com/rjo67/chess/position"
 )
 
 func main() {
-	bs := bitset.BitSet{Val: 4}
-	fmt.Println(bs.ToString())
-	fmt.Printf("bit 3 is set: %t\n", bs.IsSet(3))
+	posn := position.StartPosition()
+
+	fmt.Printf("Start position:\n%s", posn.ToString())
 
 }

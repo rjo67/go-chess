@@ -17,10 +17,10 @@ type BitSet struct {
 	Val uint64
 }
 
-// New is a convenience constructor to create a Bitset from an array of bytes.
+// NewFromByteArray is a convenience constructor to create a Bitset from an array of bytes.
 // The byte array is processed in reverse order (from [7] down to [0]),
 // i.e. input[0] is the bottom row
-func New(input [8]byte) BitSet {
+func NewFromByteArray(input [8]byte) BitSet {
 	var bs uint64
 	count := uint64(8 * (len(input) - 1))
 	for index := len(input) - 1; index >= 0; index-- {
@@ -31,6 +31,16 @@ func New(input [8]byte) BitSet {
 		count -= 8
 	}
 	return BitSet{Val: bs}
+}
+
+// NewFromSquares is a convenience constructor to create a Bitset from a list of squares.
+// The corresponding bits in the Bitset will be set.
+func NewFromSquares(squares ...square.Square) BitSet {
+	bs := BitSet{0}
+	for _, square := range squares {
+		bs.SetSquare(square)
+	}
+	return bs
 }
 
 // ToString returns a visual representation of the bitset in 8 rows of 8
@@ -68,6 +78,19 @@ func (bs *BitSet) Set(posn uint) *BitSet {
 		bs.Val += mask
 	}
 	return bs
+}
+
+// SetBits returns a slice containing all set-bits
+func (bs BitSet) SetBits() []int {
+	var squares [64]int
+	slot := 0
+	for i := 1; i < 65; i++ {
+		if bs.IsSet(uint(i)) {
+			squares[slot] = i
+			slot++
+		}
+	}
+	return squares[0:slot]
 }
 
 // ClearSquare clears the bit at the given square
