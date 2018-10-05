@@ -96,6 +96,28 @@ func TestClear(t *testing.T) {
 	}
 }
 
+func TestOr(t *testing.T) {
+	bs1 := NewFromSquares(square.E1, square.H8)
+	bs2 := NewFromSquares(square.A8, square.F2)
+	bs3 := bs1.Or(bs2)
+	// make sure bs1 and bs2 weren't affected
+	checkBits(t, bs1, []uint{uint(square.E1), uint(square.H8)}, true)
+	checkBits(t, bs2, []uint{uint(square.A8), uint(square.F2)}, true)
+	// and check result of tne 'or'
+	checkBits(t, bs3, []uint{uint(square.E1), uint(square.H8), uint(square.A8), uint(square.F2)}, true)
+}
+
+func TestAnd(t *testing.T) {
+	bs1 := NewFromSquares(square.E1, square.H8)
+	bs2 := NewFromSquares(square.E1, square.F2)
+	bs3 := bs1.And(bs2)
+	// make sure bs1 and bs2 weren't affected
+	checkBits(t, bs1, []uint{uint(square.E1), uint(square.H8)}, true)
+	checkBits(t, bs2, []uint{uint(square.E1), uint(square.F2)}, true)
+	// and check result of tne 'and'
+	checkBits(t, bs3, []uint{uint(square.E1)}, true)
+}
+
 // helper routine. Checks that all required bits are set, and all others are not set
 func checkBits(t *testing.T, bs BitSet, setBits []uint, checkIfSet bool) {
 	for _, bit := range setBits {

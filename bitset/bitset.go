@@ -43,6 +43,16 @@ func NewFromSquares(squares ...square.Square) BitSet {
 	return bs
 }
 
+// And returns a new bitset resulting from the logical AND of the current bitset and the supplied bitset
+func (bs BitSet) And(other BitSet) BitSet {
+	return BitSet{bs.Val & other.Val}
+}
+
+// Or returns a new bitset resulting from the logical OR of the current bitset and the supplied bitset
+func (bs BitSet) Or(other BitSet) BitSet {
+	return BitSet{bs.Val | other.Val}
+}
+
 // ToString returns a visual representation of the bitset in 8 rows of 8
 func (bs BitSet) ToString() string {
 	var posn uint = 65
