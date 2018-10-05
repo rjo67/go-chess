@@ -8,9 +8,10 @@ import (
 // Square represents a square of the chessboard
 type Square uint32
 
-// the squares of the board, from H1..A8
+// the squares of the board, from H1..A8. Numerically 1..64
 const (
-	H1 Square = iota
+	_ Square = iota // skip 0-value
+	H1
 	G1
 	F1
 	E1
@@ -78,11 +79,11 @@ const (
 
 // ToString returns the algebraic representation of the square
 func (sq Square) ToString() string {
-	return convertToFileLetter(sq.File()) + fmt.Sprint(sq.Rank()+1)
+	return convertToFileLetter(sq.File()) + fmt.Sprint(sq.Rank())
 }
 
 func convertToFileLetter(file uint32) string {
-	return string('A' + (7 - file))
+	return string('A' - 1 + file)
 }
 
 // FromString returns the square matching the algebraic representation
@@ -90,15 +91,17 @@ func FromString(str string) Square {
 	upperStr := strings.ToUpper(str)
 	rank := upperStr[1] - '1'
 	file := 7 - (upperStr[0] - 'A')
-	return Square(rank*8 + file)
+	return Square(rank*8 + file + 1) // "+1" since squares are 1..64
 }
 
-// Rank of the square (0..7) TODO maybe better to have 1..8?
+// Rank of the square (1..8)
+// e.g. H1 has rank 1, A4 has rank 4
 func (sq Square) Rank() uint32 {
-	return uint32(sq / 8)
+	return uint32((sq-1)/8) + 1
 }
 
-// File of the square (0..7). Can be converted with convertToFileLetter() into A..H
+// File of the square (1..8). Can be converted with convertToFileLetter() into A..H
+// e.g. H1 has file 8, A4 has file 1
 func (sq Square) File() uint32 {
-	return uint32(sq % 8)
+	return uint32(8 - (sq-1)%8)
 }

@@ -59,12 +59,11 @@ func (bs BitSet) ToString() string {
 		sb.WriteString("\n")
 	}
 	return sb.String()
-
 }
 
 // SetSquare sets the bit at the given square
 func (bs *BitSet) SetSquare(sq square.Square) *BitSet {
-	return bs.Set(uint(sq) + 1) // squares run 0..63
+	return bs.Set(uint(sq))
 }
 
 // Set sets the given bit-position. Returns itself to allow chaining.
@@ -95,7 +94,7 @@ func (bs BitSet) SetBits() []int {
 
 // ClearSquare clears the bit at the given square
 func (bs *BitSet) ClearSquare(sq square.Square) *BitSet {
-	return bs.Clear(uint(sq) + 1) // squares run 0..63
+	return bs.Clear(uint(sq))
 }
 
 // Clear unsets the given bit-position. Returns itself to allow chaining.
