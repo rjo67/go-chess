@@ -118,6 +118,23 @@ func TestAnd(t *testing.T) {
 	checkBits(t, bs3, []uint{uint(square.E1)}, true)
 }
 
+func TestCardinality(t *testing.T) {
+	data := [][]uint{
+		{},
+		{1, 7},
+		{5, 16, 21, 35, 47, 48, 49, 55},
+	}
+	for _, setBits := range data {
+		bs := BitSet{Val: 0} // start with empty bitset
+		for _, setBit := range setBits {
+			bs.Set(setBit)
+		}
+		if bs.Cardinality() != len(setBits) {
+			t.Errorf("expected cardinality %d but got %d for bitset:\n%s", len(setBits), bs.Cardinality(), bs.ToString())
+		}
+	}
+}
+
 // helper routine. Checks that all required bits are set, and all others are not set
 func checkBits(t *testing.T, bs BitSet, setBits []uint, checkIfSet bool) {
 	for _, bit := range setBits {

@@ -53,6 +53,17 @@ func (bs BitSet) Or(other BitSet) BitSet {
 	return BitSet{bs.Val | other.Val}
 }
 
+// Cardinality returns the number of set-bits in the bitset
+func (bs BitSet) Cardinality() int {
+	count := 0
+	for i := 1; i < 65; i++ {
+		if bs.IsSet(uint(i)) {
+			count++
+		}
+	}
+	return count
+}
+
 // ToString returns a visual representation of the bitset in 8 rows of 8
 func (bs BitSet) ToString() string {
 	var posn uint = 65

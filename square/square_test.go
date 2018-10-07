@@ -81,7 +81,7 @@ func TestFromString(t *testing.T) {
 		{"E8", E8},
 	}
 	for _, test := range data {
-		gotSquare := FromString(test.squareAsString)
+		gotSquare, _ := FromString(test.squareAsString)
 		if gotSquare != test.expected {
 			t.Errorf("string %s: expected %v but got %v", test.squareAsString, test.expected, gotSquare)
 		}

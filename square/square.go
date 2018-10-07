@@ -87,11 +87,17 @@ func convertToFileLetter(file uint32) string {
 }
 
 // FromString returns the square matching the algebraic representation
-func FromString(str string) Square {
+func FromString(str string) (Square, error) {
+	if len(str) != 2 {
+		return Square(0), fmt.Errorf("unrecognised square '%s'", str)
+	}
 	upperStr := strings.ToUpper(str)
+	if upperStr[1] < '1' || upperStr[1] > '8' || upperStr[0] < 'A' || upperStr[0] > 'H' {
+		return Square(0), fmt.Errorf("unrecognised square '%s'", str)
+	}
 	rank := upperStr[1] - '1'
 	file := 7 - (upperStr[0] - 'A')
-	return Square(rank*8 + file + 1) // "+1" since squares are 1..64
+	return Square(rank*8 + file + 1), nil // "+1" since squares are 1..64
 }
 
 // Rank of the square (1..8)

@@ -3,33 +3,70 @@ package position
 import (
 	"strings"
 
+	"github.com/rjo67/chess/square"
+
 	"github.com/rjo67/chess/bitset"
 	"github.com/rjo67/chess/piece"
 )
 
 // Position represents a chess position
 type Position struct {
-	// the pieces, keyed by Colour and Piece
-	pieces [][]bitset.BitSet
+	pieces               []map[piece.Piece]bitset.BitSet // array of map of piece bitsets, array-dim = colour
+	activeColour         piece.Colour                    // whose move
+	castlingAvailability string
+	enpassantSquare      *square.Square
+	halfmoveClock        int
+	fullmoveNbr          int
 }
 
 // NewPosition creates a new position
 // The bitset arrays are in the order as given by the piece constants
-func NewPosition(whitePieces []bitset.BitSet, blackPieces []bitset.BitSet) Position {
-	var posn Position
-	posn.pieces = make([][]bitset.BitSet, 2)
-	posn.pieces[piece.WHITE] = whitePieces
-	posn.pieces[piece.BLACK] = blackPieces
+func NewPosition(whitePieces, blackPieces map[piece.Piece]bitset.BitSet) Position {
+	var p Position
+	p.pieces = make([]map[piece.Piece]bitset.BitSet, 2)
 
-	return posn
+	p.pieces[piece.WHITE] = whitePieces
+	p.pieces[piece.BLACK] = blackPieces
+
+	return p
 }
 
 // StartPosition creates a new start position
 func StartPosition() Position {
-	return NewPosition([]bitset.BitSet{piece.PawnsStartPosn[piece.WHITE], piece.RooksStartPosn[piece.WHITE], piece.KnightsStartPosn[piece.WHITE],
-		piece.BishopsStartPosn[piece.WHITE], piece.QueensStartPosn[piece.WHITE], piece.KingsStartPosn[piece.WHITE]},
-		[]bitset.BitSet{piece.PawnsStartPosn[piece.BLACK], piece.RooksStartPosn[piece.BLACK], piece.KnightsStartPosn[piece.BLACK],
-			piece.BishopsStartPosn[piece.BLACK], piece.QueensStartPosn[piece.BLACK], piece.KingsStartPosn[piece.BLACK]})
+	pieces := make([]map[piece.Piece]bitset.BitSet, 2)
+
+	for _, colour := range piece.AllColours {
+		for _, pieceType := range piece.AllPieces {
+			pieces[colour][pieceType] = piece.StartPosn[colour][pieceType]
+		}
+	}
+
+	return NewPosition(pieces[piece.WHITE], pieces[piece.BLACK])
+}
+
+// EnpassantSquare returns the current enpassant square (or nil)
+func (p Position) EnpassantSquare() *square.Square {
+	return p.enpassantSquare
+}
+
+// HalfmoveClock returns the current halfmove clock
+func (p Position) HalfmoveClock() int {
+	return p.halfmoveClock
+}
+
+// FullmoveNbr returns the current fullmove nbr
+func (p Position) FullmoveNbr() int {
+	return p.fullmoveNbr
+}
+
+// CastlingAvailability returns the castling availabilty
+func (p Position) CastlingAvailability() string {
+	return p.castlingAvailability
+}
+
+// BitSetFor returns the bitset for the given piece and colour
+func (p Position) BitSetFor(colour piece.Colour, piece piece.Piece) bitset.BitSet {
+	return p.pieces[colour][piece]
 }
 
 // ToString delivers a string representation of the current position
@@ -64,4 +101,24 @@ func (p Position) ToString() string {
 	sb.WriteString("+--------+\n")
 
 	return sb.String()
+}
+
+// 'package private', only called by Builder
+func (p *Position) setEnpassantSquare(sq *square.Square) {
+	p.enpassantSquare = sq
+}
+
+// 'package private', only called by Builder
+func (p *Position) setHalfmoveClock(clock int) {
+	p.halfmoveClock = clock
+}
+
+// 'package private', only called by Builder
+func (p *Position) setFullmoveNbr(move int) {
+	p.fullmoveNbr = move
+}
+
+// 'package private', only called by Builder
+func (p *Position) setCastlingAvailability(rights string) {
+	p.castlingAvailability = rights
 }
