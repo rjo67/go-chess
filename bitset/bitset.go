@@ -14,7 +14,7 @@ import (
 //
 // Bit 1 is bottom right, Bit 64 is top left
 type BitSet struct {
-	Val uint64
+	val uint64
 }
 
 // NewFromByteArray is a convenience constructor to create a Bitset from an array of bytes.
@@ -30,7 +30,7 @@ func NewFromByteArray(input [8]byte) BitSet {
 		bs += nb
 		count -= 8
 	}
-	return BitSet{Val: bs}
+	return BitSet{val: bs}
 }
 
 // NewFromSquares is a convenience constructor to create a Bitset from a list of squares.
@@ -43,14 +43,19 @@ func NewFromSquares(squares ...square.Square) BitSet {
 	return bs
 }
 
+// Val returns the value of the bitset
+func (bs BitSet) Val() uint64 {
+	return bs.val
+}
+
 // And returns a new bitset resulting from the logical AND of the current bitset and the supplied bitset
 func (bs BitSet) And(other BitSet) BitSet {
-	return BitSet{bs.Val & other.Val}
+	return BitSet{bs.val & other.val}
 }
 
 // Or returns a new bitset resulting from the logical OR of the current bitset and the supplied bitset
 func (bs BitSet) Or(other BitSet) BitSet {
-	return BitSet{bs.Val | other.Val}
+	return BitSet{bs.val | other.val}
 }
 
 // Cardinality returns the number of set-bits in the bitset
@@ -94,8 +99,8 @@ func (bs *BitSet) Set(posn uint) *BitSet {
 		panic("invalid value for posn: " + fmt.Sprint(posn))
 	}
 	var mask uint64 = 1 << (posn - 1)
-	if bs.Val&mask != mask {
-		bs.Val += mask
+	if bs.val&mask != mask {
+		bs.val += mask
 	}
 	return bs
 }
@@ -125,8 +130,8 @@ func (bs *BitSet) Clear(posn uint) *BitSet {
 		panic("invalid value for posn: " + fmt.Sprint(posn))
 	}
 	var mask uint64 = 1 << (posn - 1)
-	if bs.Val&mask == mask {
-		bs.Val -= mask
+	if bs.val&mask == mask {
+		bs.val -= mask
 	}
 	return bs
 }
@@ -138,5 +143,27 @@ func (bs BitSet) IsSet(posn uint) bool {
 		panic("invalid value for posn: " + fmt.Sprint(posn))
 	}
 	var mask uint64 = 1 << (posn - 1)
-	return bs.Val&mask == mask
+	return bs.val&mask == mask
+}
+
+// File creates a bitset containing bits of the nth file (1..8)
+func File(n int) BitSet {
+	if n < 1 || n > 8 {
+		panic(fmt.Sprintf("invalid value for file: %d", n))
+	}
+	offset := uint(n - 1)
+	bs := BitSet{0}
+	bs.Set(1 + offset).Set(9 + offset).Set(17 + offset).Set(25 + offset).Set(33 + offset).Set(41 + offset).Set(49 + offset).Set(57 + offset)
+	return bs
+}
+
+// Rank creates a bitset containing bits of the nth rank (1..8)
+func Rank(n int) BitSet {
+	if n < 1 || n > 8 {
+		panic(fmt.Sprintf("invalid value for rank: %d", n))
+	}
+	offset := uint((n - 1) * 8)
+	bs := BitSet{0}
+	bs.Set(1 + offset).Set(2 + offset).Set(3 + offset).Set(4 + offset).Set(5 + offset).Set(6 + offset).Set(7 + offset).Set(8 + offset)
+	return bs
 }

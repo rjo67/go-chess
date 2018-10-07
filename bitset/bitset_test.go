@@ -17,8 +17,8 @@ func TestBitset(t *testing.T) {
 	b[6] = 0x02
 	b[7] = 0x01
 	bs := NewFromByteArray(b)
-	if bs.Val != 72624976668147840 {
-		t.Errorf("expected 72624976668147840 but got %d for bitset\n%s", bs.Val, bs.ToString())
+	if bs.Val() != 72624976668147840 {
+		t.Errorf("expected 72624976668147840 but got %d for bitset\n%s", bs.Val(), bs.ToString())
 	}
 }
 
@@ -26,7 +26,7 @@ func TestToString(t *testing.T) {
 	bs := BitSet{255}
 	str := bs.ToString()
 	if str != "00000000\n00000000\n00000000\n00000000\n00000000\n00000000\n00000000\n11111111\n" {
-		t.Errorf("got bad string: %s for hex value %x\n", str, bs.Val)
+		t.Errorf("got bad string: %s for hex value %x\n", str, bs.Val())
 	}
 
 }
@@ -51,23 +51,23 @@ func TestSet(t *testing.T) {
 		{3, 22, 44, 64},
 	}
 	for _, setBits := range data {
-		bs := BitSet{Val: 0} // start with empty bitset
+		bs := BitSet{} // start with empty bitset
 		for _, setBit := range setBits {
 			bs.Set(setBit)
 		}
 		checkBits(t, bs, setBits, true)
 	}
-	bs := BitSet{Val: 0}
+	bs := BitSet{}
 	bs.Set(4).Set(25).Set(44)
-	val1 := bs.Val
-	bs2 := BitSet{Val: 0}
+	val1 := bs.Val()
+	bs2 := BitSet{}
 	bs2.SetSquare(square.E1).SetSquare(square.H4).SetSquare(square.E6)
-	val2 := bs2.Val
+	val2 := bs2.Val()
 	if val1 != val2 {
 		t.Errorf("got different values for the bitsets. Bitset 1:\n%s\n, Bitset 2:\n%s", bs.ToString(), bs2.ToString())
 	}
 	bs3 := NewFromSquares(square.E1, square.H4, square.E6)
-	val3 := bs3.Val
+	val3 := bs3.Val()
 	if val2 != val3 {
 		t.Errorf("got different values for the bitsets. Bitset 2:\n%s\n, Bitset 3:\n%s", bs2.ToString(), bs3.ToString())
 	}
@@ -80,18 +80,18 @@ func TestClear(t *testing.T) {
 		{3, 22, 44, 64},
 	}
 	for _, setBits := range data {
-		bs := BitSet{Val: 0xFFFFFFFFFFFFFFFF} // start with full bitset
+		bs := BitSet{val: 0xFFFFFFFFFFFFFFFF} // start with full bitset
 		for _, setBit := range setBits {
 			bs.Clear(setBit)
 		}
 		checkBits(t, bs, setBits, false)
 	}
-	bs := BitSet{Val: 0xFFFFFFFFFFFFFFFF}
+	bs := BitSet{val: 0xFFFFFFFFFFFFFFFF}
 	bs.Clear(4).Clear(25).Clear(44)
-	val1 := bs.Val
-	bs2 := BitSet{Val: 0xFFFFFFFFFFFFFFFF}
+	val1 := bs.Val()
+	bs2 := BitSet{val: 0xFFFFFFFFFFFFFFFF}
 	bs2.ClearSquare(square.E1).ClearSquare(square.H4).ClearSquare(square.E6)
-	if val1 != bs2.Val {
+	if val1 != bs2.Val() {
 		t.Errorf("got different values for the bitsets. Bitset 1:\n%s\n, Bitset 2:\n%s", bs.ToString(), bs2.ToString())
 	}
 }
@@ -125,7 +125,7 @@ func TestCardinality(t *testing.T) {
 		{5, 16, 21, 35, 47, 48, 49, 55},
 	}
 	for _, setBits := range data {
-		bs := BitSet{Val: 0} // start with empty bitset
+		bs := BitSet{} // start with empty bitset
 		for _, setBit := range setBits {
 			bs.Set(setBit)
 		}
@@ -133,6 +133,28 @@ func TestCardinality(t *testing.T) {
 			t.Errorf("expected cardinality %d but got %d for bitset:\n%s", len(setBits), bs.Cardinality(), bs.ToString())
 		}
 	}
+}
+
+func TestRank(t *testing.T) {
+	checkBits(t, Rank(1), []uint{1, 2, 3, 4, 5, 6, 7, 8}, true)
+	checkBits(t, Rank(2), []uint{9, 10, 11, 12, 13, 14, 15, 16}, true)
+	checkBits(t, Rank(3), []uint{17, 18, 19, 20, 21, 22, 23, 24}, true)
+	checkBits(t, Rank(4), []uint{25, 26, 27, 28, 29, 30, 31, 32}, true)
+	checkBits(t, Rank(5), []uint{33, 34, 35, 36, 37, 38, 39, 40}, true)
+	checkBits(t, Rank(6), []uint{41, 42, 43, 44, 45, 46, 47, 48}, true)
+	checkBits(t, Rank(7), []uint{49, 50, 51, 52, 53, 54, 55, 56}, true)
+	checkBits(t, Rank(8), []uint{57, 58, 59, 60, 61, 62, 63, 64}, true)
+}
+
+func TestFile(t *testing.T) {
+	checkBits(t, File(1), []uint{1, 9, 17, 25, 33, 41, 49, 57}, true)
+	checkBits(t, File(2), []uint{2, 10, 18, 26, 34, 42, 50, 58}, true)
+	checkBits(t, File(3), []uint{3, 11, 19, 27, 35, 43, 51, 59}, true)
+	checkBits(t, File(4), []uint{4, 12, 20, 28, 36, 44, 52, 60}, true)
+	checkBits(t, File(5), []uint{5, 13, 21, 29, 37, 45, 53, 61}, true)
+	checkBits(t, File(6), []uint{6, 14, 22, 30, 38, 46, 54, 62}, true)
+	checkBits(t, File(7), []uint{7, 15, 23, 31, 39, 47, 55, 63}, true)
+	checkBits(t, File(8), []uint{8, 16, 24, 32, 40, 48, 56, 64}, true)
 }
 
 // helper routine. Checks that all required bits are set, and all others are not set
