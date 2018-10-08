@@ -17,6 +17,12 @@ type BitSet struct {
 	val uint64
 }
 
+// Rank2 is a bitset with rank2 set
+var Rank2 = BitSet{0xFF00}
+
+// Rank7 is a bitset with rank7 set
+var Rank7 = BitSet{0xFF000000000000}
+
 // NewFromByteArray is a convenience constructor to create a Bitset from an array of bytes.
 // The byte array is processed in reverse order (from [7] down to [0]),
 // i.e. input[0] is the bottom row
@@ -53,6 +59,11 @@ func (bs BitSet) And(other BitSet) BitSet {
 	return BitSet{bs.val & other.val}
 }
 
+// AndNot returns a new bitset resulting from the logical AND of the current bitset and the inverse of the supplied bitset
+func (bs BitSet) AndNot(other BitSet) BitSet {
+	return BitSet{bs.val & ^other.val}
+}
+
 // Or returns a new bitset resulting from the logical OR of the current bitset and the supplied bitset
 func (bs BitSet) Or(other BitSet) BitSet {
 	return BitSet{bs.val | other.val}
@@ -61,6 +72,11 @@ func (bs BitSet) Or(other BitSet) BitSet {
 // Xor returns a new bitset resulting from the logical XOR of the current bitset and the supplied bitset
 func (bs BitSet) Xor(other BitSet) BitSet {
 	return BitSet{bs.val ^ other.val}
+}
+
+// Not returns a new bitset resulting from the logical NOT of the current bitset
+func (bs BitSet) Not() BitSet {
+	return BitSet{^bs.val}
 }
 
 // Cardinality returns the number of set-bits in the bitset
@@ -74,8 +90,8 @@ func (bs BitSet) Cardinality() int {
 	return count
 }
 
-// ToString returns a visual representation of the bitset in 8 rows of 8
-func (bs BitSet) ToString() string {
+// String returns a visual representation of the bitset in 8 rows of 8
+func (bs BitSet) String() string {
 	var posn uint = 65
 	var sb strings.Builder
 	for i := 0; i < 8; i++ {
@@ -110,13 +126,23 @@ func (bs *BitSet) Set(posn uint) *BitSet {
 
 // SetBits returns a slice containing all set-bits
 func (bs BitSet) SetBits() []int {
-	squares := make([]int, 0, 64)
+	squares := make([]int, 0, 20)
 	for i := 1; i < 65; i++ {
 		if bs.IsSet(uint(i)) {
 			squares = append(squares, i)
 		}
 	}
 	return squares
+}
+
+// Shift shifts the bitset <n> bits
+func (bs BitSet) Shift(shift int) BitSet {
+	if shift > 0 {
+		v := bs.val << uint(shift)
+		return BitSet{val: v}
+	}
+	v := bs.val >> uint(-shift)
+	return BitSet{val: v}
 }
 
 // ClearSquare clears the bit at the given square
@@ -143,26 +169,4 @@ func (bs BitSet) IsSet(posn uint) bool {
 	}
 	var mask uint64 = 1 << (posn - 1)
 	return bs.val&mask == mask
-}
-
-// File creates a bitset containing bits of the nth file (1..8)
-func File(n int) BitSet {
-	if n < 1 || n > 8 {
-		panic(fmt.Sprintf("invalid value for file: %d", n))
-	}
-	offset := uint(n - 1)
-	bs := BitSet{0}
-	bs.Set(1 + offset).Set(9 + offset).Set(17 + offset).Set(25 + offset).Set(33 + offset).Set(41 + offset).Set(49 + offset).Set(57 + offset)
-	return bs
-}
-
-// Rank creates a bitset containing bits of the nth rank (1..8)
-func Rank(n int) BitSet {
-	if n < 1 || n > 8 {
-		panic(fmt.Sprintf("invalid value for rank: %d", n))
-	}
-	offset := uint((n - 1) * 8)
-	bs := BitSet{0}
-	bs.Set(1 + offset).Set(2 + offset).Set(3 + offset).Set(4 + offset).Set(5 + offset).Set(6 + offset).Set(7 + offset).Set(8 + offset)
-	return bs
 }

@@ -3,10 +3,9 @@ package position
 import (
 	"strings"
 
-	"github.com/rjo67/chess/square"
-
 	"github.com/rjo67/chess/bitset"
 	"github.com/rjo67/chess/piece"
+	"github.com/rjo67/chess/square"
 )
 
 // Position represents a chess position
@@ -35,7 +34,7 @@ func NewPosition(whitePieces, blackPieces map[piece.Piece]bitset.BitSet) Positio
 	for _, colour := range piece.AllColours {
 		p.allPieces[colour] = bitset.BitSet{}
 		for _, pieceType := range piece.AllPieces {
-			p.allPieces[colour].Or(p.pieces[colour][pieceType])
+			p.allPieces[colour] = p.allPieces[colour].Or(p.pieces[colour][pieceType])
 		}
 	}
 	p.occupiedSquares = p.allPieces[piece.WHITE].Or(p.allPieces[piece.BLACK])
@@ -55,6 +54,11 @@ func StartPosition() Position {
 	}
 
 	return NewPosition(pieces[piece.WHITE], pieces[piece.BLACK])
+}
+
+// AllPieces returns a bitset with all the occupied squares for the given colour
+func (p Position) AllPieces(colour piece.Colour) bitset.BitSet {
+	return p.allPieces[colour]
 }
 
 // OccupiedSquares returns the occupied-squares bitset

@@ -22,6 +22,12 @@ const (
 // AllDirections to iterate over the ray types
 var AllDirections = []Direction{NORTH, NORTHEAST, EAST, SOUTHEAST, SOUTH, SOUTHWEST, WEST, NORTHWEST}
 
+// AllBishopDirections to iterate over the ray types applicable for bishop moves
+var AllBishopDirections = []Direction{NORTHWEST, NORTHEAST, SOUTHWEST, SOUTHEAST}
+
+// AllRookDirections to iterate over the ray types applicable for rook moves
+var AllRookDirections = []Direction{NORTH, EAST, SOUTH, WEST}
+
 // NextSetBit returns the next set bit in the given direction, or 99 if there wasn't one
 func (dir Direction) NextSetBit(bs bitset.BitSet, start int) int {
 	switch dir {

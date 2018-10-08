@@ -21,7 +21,7 @@ func TestRank(t *testing.T) {
 	for _, test := range data {
 		rank := test.sq.Rank()
 		if rank != test.expected {
-			t.Errorf("sq: %s, expected %d but got %d", test.sq.ToString(), test.expected, rank)
+			t.Errorf("sq: %s, expected %d but got %d", test.sq.String(), test.expected, rank)
 		}
 	}
 }
@@ -43,7 +43,7 @@ func TestFile(t *testing.T) {
 	for _, test := range data {
 		file := test.sq.File()
 		if file != test.expected {
-			t.Errorf("sq: %s, expected %d but got %d", test.sq.ToString(), test.expected, file)
+			t.Errorf("sq: %s, expected %d but got %d", test.sq.String(), test.expected, file)
 		}
 	}
 }
@@ -60,7 +60,7 @@ func TestToString(t *testing.T) {
 		{"A8", A8},
 	}
 	for _, test := range data {
-		gotString := test.sq.ToString()
+		gotString := test.sq.String()
 		if gotString != test.expected {
 			t.Errorf("expected %s but got %s", test.expected, gotString)
 		}

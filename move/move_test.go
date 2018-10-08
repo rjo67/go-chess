@@ -3,20 +3,17 @@ package move
 import (
 	"testing"
 
-	"github.com/rjo67/chess/piece"
-
-	"github.com/rjo67/chess/ray"
-
 	"github.com/rjo67/chess/bitset"
-	"github.com/rjo67/chess/square"
-
+	"github.com/rjo67/chess/piece"
 	"github.com/rjo67/chess/position"
+	"github.com/rjo67/chess/ray"
+	"github.com/rjo67/chess/square"
 )
 
 func TestFindMoves(t *testing.T) {
 	moves := FindMoves(position.StartPosition(), piece.WHITE)
-	if len(moves) != 1 {
-		t.Errorf("expected %d moves but got %d", 1, len(moves))
+	if len(moves) != 20 {
+		t.Errorf("expected %d moves but got %d: %v", 20, len(moves), moves)
 	}
 }
 
@@ -52,7 +49,7 @@ func TestSearch2(t *testing.T) {
 	for testNbr, i := range data {
 		bs := search2(i.startSquare, i.direction, occupiedSquares)
 		if len(i.expectedSetBits) != bs.Cardinality() {
-			t.Errorf("test %d: expected %d set-bits, got %d for bitset:\n%s", testNbr, len(i.expectedSetBits), bs.Cardinality(), bs.ToString())
+			t.Errorf("test %d: expected %d set-bits, got %d for bitset:\n%s", testNbr, len(i.expectedSetBits), bs.Cardinality(), bs.String())
 		} else {
 			checkBits(testNbr, bs, i.expectedSetBits, t)
 		}
@@ -67,6 +64,6 @@ func checkBits(testNbr int, bs bitset.BitSet, expectedSetBits []int, t *testing.
 		}
 	}
 	if len(errors) != 0 {
-		t.Errorf("test %d: found %d errors (%v) for bitset:\n%s", testNbr, len(errors), errors, bs.ToString())
+		t.Errorf("test %d: found %d errors (%v) for bitset:\n%s", testNbr, len(errors), errors, bs.String())
 	}
 }

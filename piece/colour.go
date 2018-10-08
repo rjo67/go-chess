@@ -9,12 +9,20 @@ const (
 	BLACK
 )
 
+// Other returns the other colour
+func (c Colour) Other() Colour {
+	if c == WHITE {
+		return BLACK
+	}
+	return WHITE
+}
+
 // AllColours to iterate over the colours
 var AllColours = []Colour{WHITE, BLACK}
 
 var colourMapping = []string{"W", "B"}
 
 // ToString returns a letter describing the colour
-func (col Colour) ToString() string {
-	return colourMapping[col]
+func (c Colour) ToString() string {
+	return colourMapping[c]
 }

@@ -77,8 +77,8 @@ const (
 	A8
 )
 
-// ToString returns the algebraic representation of the square
-func (sq Square) ToString() string {
+// String returns the algebraic representation of the square
+func (sq Square) String() string {
 	return convertToFileLetter(sq.File()) + fmt.Sprint(sq.Rank())
 }
 
