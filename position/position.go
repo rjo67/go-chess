@@ -12,6 +12,8 @@ import (
 // Position represents a chess position
 type Position struct {
 	pieces               []map[piece.Piece]bitset.BitSet // array of map of piece bitsets, array-dim = colour
+	allPieces            []bitset.BitSet                 // all pieces of a particular colour
+	occupiedSquares      bitset.BitSet                   // all occupied squares
 	activeColour         piece.Colour                    // whose move
 	castlingAvailability string
 	enpassantSquare      *square.Square
@@ -24,9 +26,19 @@ type Position struct {
 func NewPosition(whitePieces, blackPieces map[piece.Piece]bitset.BitSet) Position {
 	var p Position
 	p.pieces = make([]map[piece.Piece]bitset.BitSet, 2)
+	p.allPieces = make([]bitset.BitSet, 2)
 
 	p.pieces[piece.WHITE] = whitePieces
 	p.pieces[piece.BLACK] = blackPieces
+
+	// calculate further bitmaps
+	for _, colour := range piece.AllColours {
+		p.allPieces[colour] = bitset.BitSet{}
+		for _, pieceType := range piece.AllPieces {
+			p.allPieces[colour].Or(p.pieces[colour][pieceType])
+		}
+	}
+	p.occupiedSquares = p.allPieces[piece.WHITE].Or(p.allPieces[piece.BLACK])
 
 	return p
 }
@@ -36,12 +48,23 @@ func StartPosition() Position {
 	pieces := make([]map[piece.Piece]bitset.BitSet, 2)
 
 	for _, colour := range piece.AllColours {
+		pieces[colour] = make(map[piece.Piece]bitset.BitSet)
 		for _, pieceType := range piece.AllPieces {
 			pieces[colour][pieceType] = piece.StartPosn[colour][pieceType]
 		}
 	}
 
 	return NewPosition(pieces[piece.WHITE], pieces[piece.BLACK])
+}
+
+// OccupiedSquares returns the occupied-squares bitset
+func (p Position) OccupiedSquares() bitset.BitSet {
+	return p.occupiedSquares
+}
+
+// Pieces returns the bitset for the given piece type and colour
+func (p Position) Pieces(colour piece.Colour, pieceType piece.Piece) bitset.BitSet {
+	return p.pieces[colour][pieceType]
 }
 
 // EnpassantSquare returns the current enpassant square (or nil)
@@ -76,8 +99,8 @@ func (p Position) ToString() string {
 	// populate squares with the bitset contents
 	for _, colour := range piece.AllColours {
 		for _, pieceType := range piece.AllPieces {
-			positions := p.pieces[colour][pieceType].SetBits()
-			for _, sq := range positions {
+			bits := p.pieces[colour][pieceType].SetBits()
+			for _, sq := range bits {
 				squares[sq-1] = pieceType.ToString(colour)
 			}
 		}

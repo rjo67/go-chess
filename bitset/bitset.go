@@ -58,6 +58,11 @@ func (bs BitSet) Or(other BitSet) BitSet {
 	return BitSet{bs.val | other.val}
 }
 
+// Xor returns a new bitset resulting from the logical XOR of the current bitset and the supplied bitset
+func (bs BitSet) Xor(other BitSet) BitSet {
+	return BitSet{bs.val ^ other.val}
+}
+
 // Cardinality returns the number of set-bits in the bitset
 func (bs BitSet) Cardinality() int {
 	count := 0
@@ -99,23 +104,19 @@ func (bs *BitSet) Set(posn uint) *BitSet {
 		panic("invalid value for posn: " + fmt.Sprint(posn))
 	}
 	var mask uint64 = 1 << (posn - 1)
-	if bs.val&mask != mask {
-		bs.val += mask
-	}
+	bs.val |= mask
 	return bs
 }
 
 // SetBits returns a slice containing all set-bits
 func (bs BitSet) SetBits() []int {
-	var squares [64]int
-	slot := 0
+	squares := make([]int, 0, 64)
 	for i := 1; i < 65; i++ {
 		if bs.IsSet(uint(i)) {
-			squares[slot] = i
-			slot++
+			squares = append(squares, i)
 		}
 	}
-	return squares[0:slot]
+	return squares
 }
 
 // ClearSquare clears the bit at the given square
@@ -130,9 +131,7 @@ func (bs *BitSet) Clear(posn uint) *BitSet {
 		panic("invalid value for posn: " + fmt.Sprint(posn))
 	}
 	var mask uint64 = 1 << (posn - 1)
-	if bs.val&mask == mask {
-		bs.val -= mask
-	}
+	bs.val &= ^mask
 	return bs
 }
 

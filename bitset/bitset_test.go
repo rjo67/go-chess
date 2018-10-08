@@ -7,16 +7,7 @@ import (
 )
 
 func TestBitset(t *testing.T) {
-	var b [8]byte
-	b[0] = 0x80
-	b[1] = 0x40
-	b[2] = 0x20
-	b[3] = 0x10
-	b[4] = 0x08
-	b[5] = 0x04
-	b[6] = 0x02
-	b[7] = 0x01
-	bs := NewFromByteArray(b)
+	bs := NewFromByteArray([8]byte{0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01})
 	if bs.Val() != 72624976668147840 {
 		t.Errorf("expected 72624976668147840 but got %d for bitset\n%s", bs.Val(), bs.ToString())
 	}
@@ -116,6 +107,17 @@ func TestAnd(t *testing.T) {
 	checkBits(t, bs2, []uint{uint(square.E1), uint(square.F2)}, true)
 	// and check result of tne 'and'
 	checkBits(t, bs3, []uint{uint(square.E1)}, true)
+}
+
+func TestXor(t *testing.T) {
+	bs1 := NewFromSquares(square.E1, square.H8)
+	bs2 := NewFromSquares(square.E1, square.F2)
+	bs3 := bs1.Xor(bs2)
+	// make sure bs1 and bs2 weren't affected
+	checkBits(t, bs1, []uint{uint(square.E1), uint(square.H8)}, true)
+	checkBits(t, bs2, []uint{uint(square.E1), uint(square.F2)}, true)
+	// and check result of tne operation
+	checkBits(t, bs3, []uint{uint(square.F2), uint(square.H8)}, true)
 }
 
 func TestCardinality(t *testing.T) {

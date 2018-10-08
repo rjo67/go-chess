@@ -22,6 +22,90 @@ const (
 // AllDirections to iterate over the ray types
 var AllDirections = []Direction{NORTH, NORTHEAST, EAST, SOUTHEAST, SOUTH, SOUTHWEST, WEST, NORTHWEST}
 
+// NextSetBit returns the next set bit in the given direction, or 99 if there wasn't one
+func (dir Direction) NextSetBit(bs bitset.BitSet, start int) int {
+	switch dir {
+	case NORTH:
+		for bit := start + 8; bit < 65; bit += 8 {
+			if bs.IsSet(uint(bit)) {
+				return bit
+			}
+		}
+	case NORTHEAST:
+		if !onRightHandSide(start) {
+			for bit := start + 7; bit < 65; bit += 7 {
+				if bs.IsSet(uint(bit)) {
+					return bit
+				}
+				if onRightHandSide(bit) {
+					break
+				}
+			}
+		}
+	case EAST:
+		if !onRightHandSide(start) {
+			for bit := start - 1; bit > 0; bit-- {
+				if bs.IsSet(uint(bit)) {
+					return bit
+				}
+			}
+		}
+	case SOUTHEAST:
+		if !onRightHandSide(start) {
+			for bit := start - 9; bit > 0; bit -= 9 {
+				if bs.IsSet(uint(bit)) {
+					return bit
+				}
+				if onRightHandSide(bit) {
+					break
+				}
+			}
+		}
+	case SOUTH:
+		for bit := start - 8; bit > 0; bit -= 8 {
+			if bs.IsSet(uint(bit)) {
+				return bit
+			}
+		}
+	case SOUTHWEST:
+		if !onLeftHandSide(start) {
+			for bit := start - 7; bit > 0; bit -= 7 {
+				if bs.IsSet(uint(bit)) {
+					return bit
+				}
+				if onLeftHandSide(bit) {
+					break
+				}
+			}
+		}
+	case WEST:
+		if !onLeftHandSide(start) {
+			for bit := start + 1; bit < 65; bit++ {
+				if bs.IsSet(uint(bit)) {
+					return bit
+				}
+				if onLeftHandSide(bit) {
+					break
+				}
+			}
+		}
+	case NORTHWEST:
+		if !onLeftHandSide(start) {
+			for bit := start + 9; bit < 65; bit += 9 {
+				if bs.IsSet(uint(bit)) {
+					return bit
+				}
+				if onLeftHandSide(bit) {
+					break
+				}
+			}
+		}
+	default:
+		panic("oops!?")
+	}
+	return 99
+}
+
 // AttackRay stores, for each square, the squares which are potentially attacked by a piece on that square
 type AttackRay [8]bitset.BitSet
 
