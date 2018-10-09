@@ -7,6 +7,7 @@ import (
 
 	"github.com/rjo67/chess/bitset"
 	"github.com/rjo67/chess/piece"
+	"github.com/rjo67/chess/piece/colour"
 	"github.com/rjo67/chess/square"
 )
 
@@ -49,10 +50,10 @@ func ParseFen(fen string) (Position, error) {
 	}
 
 	builder := NewBuilder()
-	for _, colour := range piece.AllColours {
-		for _, pieceStr := range piece.PieceMapping[colour] {
-			//			fmt.Printf("adding colour %d, piece %s, bitset:\n%s", colour, pieceStr, pieceMap[pieceStr].ToString())
-			builder.AddPiece(colour, piece.FromString(colour, pieceStr), pieceMap[pieceStr])
+	for _, col := range colour.AllColours {
+		for _, pieceStr := range piece.PieceMapping[col] {
+			//			fmt.Printf("adding colour %d, piece %s, bitset:\n%s", col, pieceStr, pieceMap[pieceStr].ToString())
+			builder.AddPiece(col, piece.FromString(col, pieceStr), pieceMap[pieceStr])
 		}
 	}
 
@@ -64,11 +65,14 @@ func ParseFen(fen string) (Position, error) {
 	builder.ActiveColour(activeColour)
 
 	// third field: castling rights
-	castlingAvailability, err := processField3(fields[2])
+	castlingAvailabilityKingsSide, castlingAvailabilityQueensSide, err := processField3(fields[2])
 	if err != nil {
 		return Position{}, err
 	}
-	builder.CastlingAvailability(castlingAvailability)
+	builder.CastlingAvailability(colour.White, true, castlingAvailabilityKingsSide[colour.White])
+	builder.CastlingAvailability(colour.White, false, castlingAvailabilityQueensSide[colour.White])
+	builder.CastlingAvailability(colour.Black, true, castlingAvailabilityKingsSide[colour.Black])
+	builder.CastlingAvailability(colour.Black, false, castlingAvailabilityQueensSide[colour.Black])
 
 	// fourth field: enpassant square
 	enpassantSquare, err := processField4(fields[3])
@@ -104,8 +108,8 @@ func processField1(field1 string) (map[string]*bitset.BitSet, error) {
 
 	// set up a map of bitsets corresponding to the piece identifiers
 	pieceMap := make(map[string]*bitset.BitSet)
-	for _, colour := range piece.AllColours {
-		for _, piece := range piece.PieceMapping[colour] {
+	for _, col := range colour.AllColours {
+		for _, piece := range piece.PieceMapping[col] {
 			pieceMap[piece] = &bitset.BitSet{}
 		}
 	}
@@ -143,13 +147,13 @@ func processField1(field1 string) (map[string]*bitset.BitSet, error) {
 }
 
 // second field: activeColour
-func processField2(field string) (piece.Colour, error) {
-	var activeColour piece.Colour
+func processField2(field string) (colour.Colour, error) {
+	var activeColour colour.Colour
 	switch field {
 	case "w":
-		activeColour = piece.WHITE
+		activeColour = colour.White
 	case "b":
-		activeColour = piece.BLACK
+		activeColour = colour.Black
 	default:
 		return 0, ParseError{fmt.Sprintf("unrecognised colour: '%s'", field), 2}
 	}
@@ -157,36 +161,45 @@ func processField2(field string) (piece.Colour, error) {
 }
 
 // third field: castling rights
-func processField3(field string) (string, error) {
+func processField3(field string) ([]bool, []bool, error) {
+	kingsSide := make([]bool, 2)
+	queensSide := make([]bool, 2)
+	if field == "-" {
+		return kingsSide, queensSide, nil
+	}
 	var kingsSideWhite, kingsSideBlack, queensSideWhite, queensSideBlack bool
 	for i := 0; i < len(field); i++ {
 		str := string(field[i])
 		switch str {
 		case "K":
 			if kingsSideWhite {
-				return "", ParseError{fmt.Sprintf("%s %s", castlingAvailabilitySyntax, "(multiple 'K')"), 3}
+				return nil, nil, ParseError{fmt.Sprintf("%s %s", castlingAvailabilitySyntax, "(multiple 'K')"), 3}
 			}
 			kingsSideWhite = true
+			kingsSide[colour.White] = true
 		case "k":
 			if kingsSideBlack {
-				return "", ParseError{fmt.Sprintf("%s %s", castlingAvailabilitySyntax, "(multiple 'k')"), 3}
+				return nil, nil, ParseError{fmt.Sprintf("%s %s", castlingAvailabilitySyntax, "(multiple 'k')"), 3}
 			}
 			kingsSideBlack = true
+			kingsSide[colour.Black] = true
 		case "Q":
 			if queensSideWhite {
-				return "", ParseError{fmt.Sprintf("%s %s", castlingAvailabilitySyntax, "(multiple 'Q')"), 3}
+				return nil, nil, ParseError{fmt.Sprintf("%s %s", castlingAvailabilitySyntax, "(multiple 'Q')"), 3}
 			}
 			queensSideWhite = true
+			queensSide[colour.White] = true
 		case "q":
 			if queensSideBlack {
-				return "", ParseError{fmt.Sprintf("%s %s", castlingAvailabilitySyntax, "(multiple 'q')"), 3}
+				return nil, nil, ParseError{fmt.Sprintf("%s %s", castlingAvailabilitySyntax, "(multiple 'q')"), 3}
 			}
 			queensSideBlack = true
+			queensSide[colour.Black] = true
 		default:
-			return "", ParseError{castlingAvailabilitySyntax, 3}
+			return nil, nil, ParseError{castlingAvailabilitySyntax, 3}
 		}
 	}
-	return field, nil
+	return kingsSide, queensSide, nil
 }
 
 // fourth field: enpassant square

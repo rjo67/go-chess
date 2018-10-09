@@ -1,28 +1,29 @@
-package piece
+package colour
 
 // Colour represents the colours
 type Colour uint32
 
 // the colours
 const (
-	WHITE Colour = iota
-	BLACK
+	White Colour = iota
+	Black
+	AnyColour // any colour
 )
 
 // Other returns the other colour
 func (c Colour) Other() Colour {
-	if c == WHITE {
-		return BLACK
+	if c == White {
+		return Black
 	}
-	return WHITE
+	return White
 }
 
 // AllColours to iterate over the colours
-var AllColours = []Colour{WHITE, BLACK}
+var AllColours = []Colour{White, Black}
 
 var colourMapping = []string{"W", "B"}
 
-// ToString returns a letter describing the colour
-func (c Colour) ToString() string {
+// String returns a letter describing the colour
+func (c Colour) String() string {
 	return colourMapping[c]
 }

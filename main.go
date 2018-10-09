@@ -9,6 +9,6 @@ import (
 func main() {
 	posn := position.StartPosition()
 
-	fmt.Printf("Start position:\n%s", posn.ToString())
+	fmt.Printf("Start position:\n%s", posn.String())
 
 }

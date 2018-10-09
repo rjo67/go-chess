@@ -22,6 +22,16 @@ func TestAttackRays(t *testing.T) {
 	checkBitSet(ar[NORTHEAST], []uint{63}, t)
 }
 
+func TestKnightAttackBitSet(t *testing.T) {
+	checkBitSet(KnightAttackBitSets[1], []uint{11, 18}, t)
+	checkBitSet(KnightAttackBitSets[64], []uint{54, 47}, t)
+}
+
+func TestKingAttackBitSet(t *testing.T) {
+	checkBitSet(KingAttackBitSets[1], []uint{2, 10, 9}, t)
+	checkBitSet(KingAttackBitSets[64], []uint{63, 56, 55}, t)
+}
+
 // tests the given bitset by creating a new one with setBits,
 // and ORing the two together. The result should be the same bitset value
 func checkBitSet(bs bitset.BitSet, setBits []uint, t *testing.T) {
@@ -31,6 +41,6 @@ func checkBitSet(bs bitset.BitSet, setBits []uint, t *testing.T) {
 	}
 	result := bs.Or(newBitset)
 	if bs.Val() != result.Val() {
-		t.Errorf("differing bitsets. BS1:\n%s\n, BS2:\n%s", bs.ToString(), newBitset.ToString())
+		t.Errorf("differing bitsets. BS1:\n%s\n, BS2:\n%s", bs.String(), newBitset.String())
 	}
 }

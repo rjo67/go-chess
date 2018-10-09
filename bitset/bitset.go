@@ -23,6 +23,12 @@ var Rank2 = BitSet{0xFF00}
 // Rank7 is a bitset with rank7 set
 var Rank7 = BitSet{0xFF000000000000}
 
+// NotFile1 is a bitset with everything set except file1 (a1..a8)
+var NotFile1 = BitSet{0x7F7F7F7F7F7F7F7F}
+
+// NotFile8 is a bitset with everything set except file8 (h1..h8)
+var NotFile8 = BitSet{0xFEFEFEFEFEFEFEFE}
+
 // NewFromByteArray is a convenience constructor to create a Bitset from an array of bytes.
 // The byte array is processed in reverse order (from [7] down to [0]),
 // i.e. input[0] is the bottom row

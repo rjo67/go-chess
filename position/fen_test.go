@@ -6,6 +6,7 @@ import (
 
 	"github.com/rjo67/chess/bitset"
 	"github.com/rjo67/chess/piece"
+	"github.com/rjo67/chess/piece/colour"
 	"github.com/rjo67/chess/square"
 )
 
@@ -55,8 +56,8 @@ func TestCorrectField1(t *testing.T) {
 	}
 
 	for _, i := range data {
-		bs := posn.BitSetFor(piece.BLACK, i.piece)
-		checkBits(i.piece, i.bits, bs, t)
+		bs := posn.BitSetFor(colour.Black, i.piece)
+		checkBitsForPiece(i.piece, i.bits, bs, t)
 	}
 }
 
@@ -79,9 +80,36 @@ func TestField3(t *testing.T) {
 	posn, err := ParseFen("7k/8/8/8/8/8/8/7K w Kq - 0 0")
 	if err != nil {
 		t.Errorf("unexpected error: %s", err.Error())
+	} else {
+		if !posn.CastlingAvailability(colour.White, true) {
+			t.Errorf("expected kings-side castling for white")
+		}
+		if posn.CastlingAvailability(colour.White, false) {
+			t.Errorf("did not expect queens-side castling for white")
+		}
+		if posn.CastlingAvailability(colour.Black, true) {
+			t.Errorf("did not expect kings-side castling for black")
+		}
+		if !posn.CastlingAvailability(colour.Black, false) {
+			t.Errorf("expected queens-side castling for black")
+		}
 	}
-	if posn.CastlingAvailability() != "Kq" {
-		t.Errorf("expected Kq but got: %s", posn.CastlingAvailability())
+	posn, err = ParseFen("7k/8/8/8/8/8/8/7K w - - 0 0")
+	if err != nil {
+		t.Errorf("unexpected error: %s", err.Error())
+	} else {
+		if posn.CastlingAvailability(colour.White, true) {
+			t.Errorf("did not expect kings-side castling for white")
+		}
+		if posn.CastlingAvailability(colour.White, false) {
+			t.Errorf("did not expect queens-side castling for white")
+		}
+		if posn.CastlingAvailability(colour.Black, true) {
+			t.Errorf("did not expect kings-side castling for black")
+		}
+		if posn.CastlingAvailability(colour.Black, false) {
+			t.Errorf("did not queens-side castling for black")
+		}
 	}
 }
 
@@ -135,10 +163,10 @@ func checkErrorMessage(err error, expectedMessage string, t *testing.T) {
 	}
 }
 
-func checkBits(piece piece.Piece, bits []int, bs bitset.BitSet, t *testing.T) {
+func checkBitsForPiece(piece piece.Piece, bits []int, bs bitset.BitSet, t *testing.T) {
 	for _, i := range bits {
 		if !bs.IsSet(uint(i)) {
-			t.Errorf("checking piece %d: bit %d should be set for bitset:\n%s", piece, i, bs.ToString())
+			t.Errorf("checking piece %d: bit %d should be set for bitset:\n%s", piece, i, bs.String())
 		}
 	}
 }

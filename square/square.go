@@ -82,7 +82,7 @@ func (sq Square) String() string {
 	return convertToFileLetter(sq.File()) + fmt.Sprint(sq.Rank())
 }
 
-func convertToFileLetter(file uint32) string {
+func convertToFileLetter(file int) string {
 	return string('A' - 1 + file)
 }
 
@@ -100,14 +100,19 @@ func FromString(str string) (Square, error) {
 	return Square(rank*8 + file + 1), nil // "+1" since squares are 1..64
 }
 
+// FromRankAndFile returns the square matching the rank and file
+func FromRankAndFile(rank int, file int) Square {
+	return Square((rank-1)*8 + (9 - file))
+}
+
 // Rank of the square (1..8)
 // e.g. H1 has rank 1, A4 has rank 4
-func (sq Square) Rank() uint32 {
-	return uint32((sq-1)/8) + 1
+func (sq Square) Rank() int {
+	return (int(sq)-1)/8 + 1
 }
 
 // File of the square (1..8). Can be converted with convertToFileLetter() into A..H
 // e.g. H1 has file 8, A4 has file 1
-func (sq Square) File() uint32 {
-	return uint32(8 - (sq-1)%8)
+func (sq Square) File() int {
+	return 8 - (int(sq)-1)%8
 }

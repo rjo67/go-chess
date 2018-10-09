@@ -6,7 +6,7 @@ import (
 
 func TestRank(t *testing.T) {
 	data := []struct {
-		expected uint32
+		expected int
 		sq       Square
 	}{
 		{1, H1},
@@ -28,9 +28,10 @@ func TestRank(t *testing.T) {
 
 func TestFile(t *testing.T) {
 	data := []struct {
-		expected uint32
+		expected int
 		sq       Square
 	}{
+		{8, H1},
 		{1, A2},
 		{2, B6},
 		{3, C7},

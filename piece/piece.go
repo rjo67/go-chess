@@ -2,6 +2,7 @@ package piece
 
 import (
 	"github.com/rjo67/chess/bitset"
+	"github.com/rjo67/chess/piece/colour"
 	"github.com/rjo67/chess/square"
 )
 
@@ -91,12 +92,12 @@ var StringToPiece = map[string]Piece{
 }
 
 // ToString returns a letter describing the piece
-func (p Piece) ToString(colour Colour) string {
+func (p Piece) ToString(colour colour.Colour) string {
 	return PieceMapping[colour][p]
 }
 
 // FromString returns a piece from the given letter.FromString
 // No distinction between black or white pieces (i.e. "P" or "p" will both return PAWN)
-func FromString(colour Colour, str string) Piece {
+func FromString(colour colour.Colour, str string) Piece {
 	return StringToPiece[str]
 }
