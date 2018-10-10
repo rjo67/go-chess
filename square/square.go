@@ -2,6 +2,7 @@ package square
 
 import (
 	"fmt"
+	"math"
 	"strings"
 )
 
@@ -115,4 +116,15 @@ func (sq Square) Rank() int {
 // e.g. H1 has file 8, A4 has file 1
 func (sq Square) File() int {
 	return 8 - (int(sq)-1)%8
+}
+
+// IsAdjacentTo returns true when the given squares are adjacent to each other
+func (sq Square) IsAdjacentTo(otherSq Square) bool {
+	if math.Abs(float64(sq.File()-otherSq.File())) > 1 {
+		return false
+	}
+	if math.Abs(float64(sq.Rank()-otherSq.Rank())) > 1 {
+		return false
+	}
+	return true
 }

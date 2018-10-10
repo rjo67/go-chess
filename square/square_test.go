@@ -49,7 +49,50 @@ func TestFile(t *testing.T) {
 	}
 }
 
-func TestToString(t *testing.T) {
+func TestAdjacent(t *testing.T) {
+	data := []struct {
+		sq       Square
+		expected []int
+	}{
+		{H1, []int{1, 2, 9, 10}},
+		{G1, []int{1, 2, 3, 9, 10, 11}},
+		{F1, []int{2, 3, 4, 10, 11, 12}},
+		{E1, []int{3, 4, 5, 11, 12, 13}},
+		{D1, []int{4, 5, 6, 12, 13, 14}},
+		{C1, []int{5, 6, 7, 13, 14, 15}},
+		{B1, []int{6, 7, 8, 14, 15, 16}},
+		{A1, []int{7, 8, 15, 16}},
+		{H3, []int{17, 18, 9, 10, 25, 26}},
+		{D3, []int{21, 20, 22, 12, 13, 14, 28, 29, 30}},
+		{A3, []int{24, 16, 32, 15, 23, 31}},
+	}
+	for _, test := range data {
+		squares := make([]int, 0, 10)
+		for otherSq := 1; otherSq < 65; otherSq++ {
+			if test.sq.IsAdjacentTo(Square(otherSq)) {
+				squares = append(squares, otherSq)
+			}
+		}
+		if len(squares) != len(test.expected) {
+			t.Errorf("sq: %d, expected len %d but got %d (%v)", test.sq, len(test.expected), len(squares), squares)
+		} else {
+			for _, sq := range test.expected {
+				// find sq in squares
+				for i, sq2 := range squares {
+					if sq2 == sq {
+						squares = append(squares[:i], squares[i+1:]...)
+						break
+					}
+				}
+			}
+			if len(squares) != 0 {
+				t.Errorf("sq: %d, squares left over: %v", test.sq, squares)
+			}
+		}
+	}
+}
+
+func TestString(t *testing.T) {
 	data := []struct {
 		expected string
 		sq       Square

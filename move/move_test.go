@@ -38,7 +38,7 @@ func TestSearch(t *testing.T) {
 	}
 
 	for testNbr, i := range data {
-		bs := Search2(i.startSquare, i.direction, occupiedSquares)
+		bs, _ := Search2(i.startSquare, i.direction, occupiedSquares)
 		if len(i.expectedSetBits) != bs.Cardinality() {
 			t.Errorf("test %d: expected %d set-bits, got %d for bitset:\n%s", testNbr, len(i.expectedSetBits), bs.Cardinality(), bs.String())
 		} else {

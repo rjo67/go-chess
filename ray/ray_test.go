@@ -35,7 +35,7 @@ func TestKingAttackBitSet(t *testing.T) {
 // tests the given bitset by creating a new one with setBits,
 // and ORing the two together. The result should be the same bitset value
 func checkBitSet(bs bitset.BitSet, setBits []uint, t *testing.T) {
-	newBitset := bitset.BitSet{}
+	newBitset := bitset.New(0)
 	for _, bit := range setBits {
 		newBitset.Set(bit)
 	}

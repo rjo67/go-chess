@@ -29,6 +29,11 @@ var NotFile1 = BitSet{0x7F7F7F7F7F7F7F7F}
 // NotFile8 is a bitset with everything set except file8 (h1..h8)
 var NotFile8 = BitSet{0xFEFEFEFEFEFEFEFE}
 
+// New creates a Bitset from the given value.
+func New(val uint64) BitSet {
+	return BitSet{val: val}
+}
+
 // NewFromByteArray is a convenience constructor to create a Bitset from an array of bytes.
 // The byte array is processed in reverse order (from [7] down to [0]),
 // i.e. input[0] is the bottom row
@@ -83,6 +88,11 @@ func (bs BitSet) Xor(other BitSet) BitSet {
 // Not returns a new bitset resulting from the logical NOT of the current bitset
 func (bs BitSet) Not() BitSet {
 	return BitSet{^bs.val}
+}
+
+// IsEmpty returns true when the bitset is empty
+func (bs BitSet) IsEmpty() bool {
+	return bs.val == 0
 }
 
 // Cardinality returns the number of set-bits in the bitset

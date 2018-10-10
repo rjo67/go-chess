@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/rjo67/chess/bitset"
+	"github.com/rjo67/chess/move"
 	"github.com/rjo67/chess/piece"
 	"github.com/rjo67/chess/piece/colour"
 	"github.com/rjo67/chess/ray"
@@ -37,7 +38,7 @@ func NewPosition(whitePieces, blackPieces map[piece.Piece]bitset.BitSet) Positio
 
 	// calculate further bitmaps:
 	for _, col := range colour.AllColours {
-		p.allPieces[col] = bitset.BitSet{}
+		p.allPieces[col] = bitset.New(0)
 		for _, pieceType := range piece.AllPieces {
 			p.allPieces[col] = p.allPieces[col].Or(p.pieces[col][pieceType])
 		}
@@ -45,6 +46,23 @@ func NewPosition(whitePieces, blackPieces map[piece.Piece]bitset.BitSet) Positio
 	p.occupiedSquares = p.allPieces[colour.White].Or(p.allPieces[colour.Black])
 
 	return p
+}
+
+// MakeMove updates the position with the given move
+//TODO captures, pawn promotion, castling
+func (p *Position) MakeMove(m move.Move) {
+	bs := bitset.NewFromSquares(m.From(), m.To())
+	p.pieces[m.Colour()][m.PieceType()] = p.pieces[m.Colour()][m.PieceType()].Xor(bs)
+	p.allPieces[m.Colour()] = p.allPieces[m.Colour()].Xor(bs)
+	p.occupiedSquares = p.occupiedSquares.Xor(bs)
+}
+
+// UnmakeMove updates the position with the reverse of the given move
+func (p *Position) UnmakeMove(m move.Move) {
+	bs := bitset.NewFromSquares(m.From(), m.To())
+	p.pieces[m.Colour()][m.PieceType()] = p.pieces[m.Colour()][m.PieceType()].Xor(bs)
+	p.allPieces[m.Colour()] = p.allPieces[m.Colour()].Xor(bs)
+	p.occupiedSquares = p.occupiedSquares.Xor(bs)
 }
 
 // StartPosition creates a new start position
@@ -108,8 +126,7 @@ func (p Position) BitSetFor(col colour.Colour, piece piece.Piece) bitset.BitSet 
 // If requiredColour is specified, only the pieces of this colour will be returned.
 // (If requiredColour is AnyColour, all attacks are returned)
 func (p Position) Attacks(sq square.Square, requiredColour colour.Colour) bitset.BitSet {
-	bs := bitset.BitSet{}
-
+	bs := bitset.New(0)
 	var bishops, rooks, queens, knights, pawns, kings bitset.BitSet
 	diagonals := p._find2(int(sq), ray.AllBishopDirections)
 	rankfiles := p._find2(int(sq), ray.AllRookDirections)

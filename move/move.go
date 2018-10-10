@@ -29,6 +29,24 @@ func NewCapture(col colour.Colour, from, to square.Square, pieceType piece.Piece
 	return Move{col: col, from: from, to: to, pieceType: pieceType, capture: true}
 }
 
+// IsKingsMove returns true when this move involves the king (castling excluded)
+func (m Move) IsKingsMove() bool { return m.pieceType == piece.KING }
+
+// IsCastles returns true when this move was "castles"
+func (m Move) IsCastles() bool { return m.castle }
+
+// From returns the move's source square
+func (m Move) From() square.Square { return m.from }
+
+// To returns the move's target square
+func (m Move) To() square.Square { return m.to }
+
+// Colour returns the colour of the move
+func (m Move) Colour() colour.Colour { return m.col }
+
+// PieceType returns the move's piece
+func (m Move) PieceType() piece.Piece { return m.pieceType }
+
 // CastleKingsSide creates O-O
 func CastleKingsSide(col colour.Colour) Move {
 	if col == colour.White {
@@ -61,14 +79,14 @@ func (m Move) String() string {
 // Search2 implements the algorithm as described in secition 2 of http://www.craftychess.com/hyatt/bitmaps.html
 // i.e. using 'normal' bitmaps.
 // The returned bitset contains all possible squares which can be moved to in the given direction.
-// NB: it is up to the caller to determine whether the 'blocker' square (if present, the last 'set-bit' in the bitset) is
-//     occupied by an opponent's piece (==capture) or our own colour (==no move)
-func Search2(startSquare int, direction ray.Direction, occupiedSquares bitset.BitSet) bitset.BitSet {
-	attackRay := ray.AttackRays[startSquare][direction]           // get the squares attacked in the given direction
-	blockers := attackRay.And(occupiedSquares)                    // returns blockers along the direction
-	blockingSquare := direction.NextSetBit(blockers, startSquare) // find the first blocking square
+// The blockingSquare will be set to the 'blocker' or 99 if no blocker
+// NB: it is up to the caller to determine whether the 'blocker' square is occupied by an opponent's piece (==capture) or our own colour (==no move)
+func Search2(startSquare int, direction ray.Direction, occupiedSquares bitset.BitSet) (attackRay bitset.BitSet, blockingSquare int) {
+	attackRay = ray.AttackRays[startSquare][direction]           // get the squares attacked in the given direction
+	blockers := attackRay.And(occupiedSquares)                   // returns blockers along the direction
+	blockingSquare = direction.NextSetBit(blockers, startSquare) // find the first blocking square
 	if blockingSquare != 99 {
 		attackRay = attackRay.Xor(ray.AttackRays[blockingSquare][direction]) // remove squares 'after' the blocking square
 	}
-	return attackRay
+	return attackRay, blockingSquare
 }

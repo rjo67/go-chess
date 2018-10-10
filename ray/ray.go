@@ -119,7 +119,7 @@ type AttackRay [8]bitset.BitSet
 
 // internal constructor
 func newKnightAttackBitset(start int) bitset.BitSet {
-	bs := bitset.BitSet{}
+	bs := bitset.New(0)
 	startSq := square.Square(start)
 	rank := startSq.Rank()
 	file := startSq.File()
@@ -157,10 +157,10 @@ func newPawnAttackBitset(col colour.Colour, target int) bitset.BitSet {
 	switch col {
 	case colour.White:
 		if target < 16 {
-			return bitset.BitSet{}
+			return bitset.New(0)
 		}
 		// check for LHS or RHS
-		bs := bitset.BitSet{}
+		bs := bitset.New(0)
 		if target%8 == 0 {
 			return *bs.Set(uint(target - 9))
 		} else if target%8 == 1 {
@@ -169,10 +169,10 @@ func newPawnAttackBitset(col colour.Colour, target int) bitset.BitSet {
 		return *bs.Set(uint(target - 7)).Set(uint(target - 9))
 	case colour.Black:
 		if target > 48 {
-			return bitset.BitSet{}
+			return bitset.New(0)
 		}
 		// check for LHS or RHS
-		bs := bitset.BitSet{}
+		bs := bitset.New(0)
 		if target%8 == 0 {
 			return *bs.Set(uint(target + 7))
 		} else if target%8 == 1 {
@@ -185,7 +185,7 @@ func newPawnAttackBitset(col colour.Colour, target int) bitset.BitSet {
 }
 
 func newKingAttackBitset(start int) bitset.BitSet {
-	bs := bitset.BitSet{}
+	bs := bitset.New(0)
 	startSq := square.Square(start)
 	rank := startSq.Rank()
 	file := startSq.File()
@@ -222,7 +222,7 @@ func newKingAttackBitset(start int) bitset.BitSet {
 func newAttackRay(start int) AttackRay {
 	ar := AttackRay{}
 	for i, rayType := range AllDirections {
-		var bs bitset.BitSet
+		var bs = bitset.New(0)
 		switch rayType {
 		case NORTH:
 			for bit := start + 8; bit < 65; bit += 8 {
@@ -241,6 +241,9 @@ func newAttackRay(start int) AttackRay {
 			if !onRightHandSide(start) {
 				for bit := start - 1; bit > 0; bit-- {
 					bs.Set(uint(bit))
+					if onRightHandSide(bit) {
+						break
+					}
 				}
 			}
 		case SOUTHEAST:
@@ -310,7 +313,7 @@ var AttackRays = [65]AttackRay{
 
 // KnightAttackBitSets stores the squares that a knight on square x attacks
 var KnightAttackBitSets = [65]bitset.BitSet{
-	bitset.BitSet{}, // first is empty
+	bitset.New(0), // first is empty
 	// H1
 	newKnightAttackBitset(1), newKnightAttackBitset(2), newKnightAttackBitset(3), newKnightAttackBitset(4), newKnightAttackBitset(5), newKnightAttackBitset(6),
 	newKnightAttackBitset(7), newKnightAttackBitset(8), newKnightAttackBitset(9), newKnightAttackBitset(10), newKnightAttackBitset(11), newKnightAttackBitset(12),
@@ -329,7 +332,7 @@ var KnightAttackBitSets = [65]bitset.BitSet{
 // !!! this is different to all the others, it stores the squares which attack square x, not v.v. !!!
 var PawnAttackBitSets = [][65]bitset.BitSet{
 	{
-		bitset.BitSet{}, // first is empty
+		bitset.New(0), // first is empty
 		// H1
 		newPawnAttackBitset(colour.White, 1), newPawnAttackBitset(colour.White, 2), newPawnAttackBitset(colour.White, 3), newPawnAttackBitset(colour.White, 4), newPawnAttackBitset(colour.White, 5), newPawnAttackBitset(colour.White, 6),
 		newPawnAttackBitset(colour.White, 7), newPawnAttackBitset(colour.White, 8), newPawnAttackBitset(colour.White, 9), newPawnAttackBitset(colour.White, 10), newPawnAttackBitset(colour.White, 11), newPawnAttackBitset(colour.White, 12),
@@ -344,7 +347,7 @@ var PawnAttackBitSets = [][65]bitset.BitSet{
 		newPawnAttackBitset(colour.White, 61), newPawnAttackBitset(colour.White, 62), newPawnAttackBitset(colour.White, 63), newPawnAttackBitset(colour.White, 64),
 	},
 	{
-		bitset.BitSet{}, // first is empty
+		bitset.New(0), // first is empty
 		// H1
 		newPawnAttackBitset(colour.Black, 1), newPawnAttackBitset(colour.Black, 2), newPawnAttackBitset(colour.Black, 3), newPawnAttackBitset(colour.Black, 4), newPawnAttackBitset(colour.Black, 5), newPawnAttackBitset(colour.Black, 6),
 		newPawnAttackBitset(colour.Black, 7), newPawnAttackBitset(colour.Black, 8), newPawnAttackBitset(colour.Black, 9), newPawnAttackBitset(colour.Black, 10), newPawnAttackBitset(colour.Black, 11), newPawnAttackBitset(colour.Black, 12),
@@ -362,7 +365,7 @@ var PawnAttackBitSets = [][65]bitset.BitSet{
 
 // KingAttackBitSets stores the squares that a king on square x attacks
 var KingAttackBitSets = [65]bitset.BitSet{
-	bitset.BitSet{}, // first is empty
+	bitset.New(0), // first is empty
 	// H1
 	newKingAttackBitset(1), newKingAttackBitset(2), newKingAttackBitset(3), newKingAttackBitset(4), newKingAttackBitset(5), newKingAttackBitset(6),
 	newKingAttackBitset(7), newKingAttackBitset(8), newKingAttackBitset(9), newKingAttackBitset(10), newKingAttackBitset(11), newKingAttackBitset(12),
