@@ -17,11 +17,23 @@ type BitSet struct {
 	val uint64
 }
 
+// Rank1 is a bitset with rank1 set
+var Rank1 = BitSet{0xFF}
+
+// NotRank1 is a bitset with everything set exception rank1 (a1..h1)
+var NotRank1 = BitSet{0xFFFFFFFFFFFFFF00}
+
 // Rank2 is a bitset with rank2 set
 var Rank2 = BitSet{0xFF00}
 
 // Rank7 is a bitset with rank7 set
 var Rank7 = BitSet{0xFF000000000000}
+
+// Rank8 is a bitset with rank8 set
+var Rank8 = BitSet{0xFF00000000000000}
+
+// NotRank8 is a bitset with everything set exception rank8 (a8..h8)
+var NotRank8 = BitSet{0x00FFFFFFFFFFFFFF}
 
 // NotFile1 is a bitset with everything set except file1 (a1..a8)
 var NotFile1 = BitSet{0x7F7F7F7F7F7F7F7F}

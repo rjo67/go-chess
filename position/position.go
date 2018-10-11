@@ -1,6 +1,7 @@
 package position
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/rjo67/chess/bitset"
@@ -49,20 +50,49 @@ func NewPosition(whitePieces, blackPieces map[piece.Piece]bitset.BitSet) Positio
 }
 
 // MakeMove updates the position with the given move
-//TODO captures, pawn promotion, castling
+//TODO pawn promotion, castling
 func (p *Position) MakeMove(m move.Move) {
+	if m.IsCapture() {
+		// remove other-coloured piece at m.To()
+		targetBs := bitset.NewFromSquares(m.To())
+		otherColour := m.Colour().Other()
+		p.pieces[otherColour][m.CapturedPiece()] = p.pieces[otherColour][m.CapturedPiece()].AndNot(targetBs)
+		p.allPieces[otherColour] = p.allPieces[otherColour].AndNot(targetBs)
+	}
+	// move our colour piece from m.From() to m.To()
 	bs := bitset.NewFromSquares(m.From(), m.To())
 	p.pieces[m.Colour()][m.PieceType()] = p.pieces[m.Colour()][m.PieceType()].Xor(bs)
 	p.allPieces[m.Colour()] = p.allPieces[m.Colour()].Xor(bs)
-	p.occupiedSquares = p.occupiedSquares.Xor(bs)
+
+	if m.IsCapture() {
+		// must clear m.From(), but m.To() is still occupied
+		p.occupiedSquares.Clear(uint(m.From()))
+	} else {
+		p.occupiedSquares = p.occupiedSquares.Xor(bs)
+	}
+
 }
 
 // UnmakeMove updates the position with the reverse of the given move
 func (p *Position) UnmakeMove(m move.Move) {
+	if m.IsCapture() {
+		// restore other-coloured piece at m.To()
+		targetBs := bitset.NewFromSquares(m.To())
+		otherColour := m.Colour().Other()
+		p.pieces[otherColour][m.CapturedPiece()] = p.pieces[otherColour][m.CapturedPiece()].Or(targetBs)
+		p.allPieces[otherColour] = p.allPieces[otherColour].Or(targetBs)
+	}
+
 	bs := bitset.NewFromSquares(m.From(), m.To())
 	p.pieces[m.Colour()][m.PieceType()] = p.pieces[m.Colour()][m.PieceType()].Xor(bs)
 	p.allPieces[m.Colour()] = p.allPieces[m.Colour()].Xor(bs)
-	p.occupiedSquares = p.occupiedSquares.Xor(bs)
+
+	if m.IsCapture() {
+		// must set m.From() again, but m.To() is still occupied
+		p.occupiedSquares.Set(uint(m.From()))
+	} else {
+		p.occupiedSquares = p.occupiedSquares.Xor(bs)
+	}
 }
 
 // StartPosition creates a new start position
@@ -77,6 +107,17 @@ func StartPosition() Position {
 	}
 
 	return NewPosition(pieces[colour.White], pieces[colour.Black])
+}
+
+// PieceAt returns the piece of the specified colour located at sq
+// -- panic if there is no such piece
+func (p Position) PieceAt(sq uint, requiredColour colour.Colour) piece.Piece {
+	for _, pieceType := range piece.AllPieces {
+		if p.pieces[requiredColour][pieceType].IsSet(sq) {
+			return pieceType
+		}
+	}
+	panic(fmt.Sprintf("no %s piece found on square %d", requiredColour.String(), sq))
 }
 
 // AllPieces returns a bitset with all the occupied squares for the given colour
@@ -162,7 +203,7 @@ func (p Position) String() string {
 		for _, pieceType := range piece.AllPieces {
 			bits := p.pieces[col][pieceType].SetBits()
 			for _, sq := range bits {
-				squares[sq-1] = pieceType.ToString(col)
+				squares[sq-1] = pieceType.String(col)
 			}
 		}
 	}

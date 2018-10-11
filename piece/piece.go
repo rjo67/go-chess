@@ -22,6 +22,9 @@ const (
 // AllPieces to iterate over the piece types
 var AllPieces = []Piece{PAWN, ROOK, KNIGHT, BISHOP, QUEEN, KING}
 
+// PromotedPawnPieceCandidates specifies the pieces which a pawn can promote to
+var PromotedPawnPieceCandidates = []Piece{QUEEN, ROOK, BISHOP, KNIGHT}
+
 // StartPosn stores the start positions of all pieces, keyed by colour and piece type (ordering as given by AllColours and AllPieces)
 var StartPosn = [][]bitset.BitSet{
 	// WHITE
@@ -91,8 +94,8 @@ var StringToPiece = map[string]Piece{
 	BlackKingString:   KING,
 }
 
-// ToString returns a letter describing the piece
-func (p Piece) ToString(colour colour.Colour) string {
+// String returns a letter describing the piece
+func (p Piece) String(colour colour.Colour) string {
 	return PieceMapping[colour][p]
 }
 

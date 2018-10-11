@@ -73,13 +73,17 @@ func (p Position) findPawnMoves(col colour.Colour) []move.Move {
 	moves := make([]move.Move, 0, 50)
 
 	var shift int
-	var rankMask bitset.BitSet
+	var rankMask, promotionMask, everythingExceptPromotion bitset.BitSet
 	if col == colour.White {
 		shift = 8
 		rankMask = bitset.Rank2
+		promotionMask = bitset.Rank8
+		everythingExceptPromotion = bitset.NotRank8
 	} else {
 		shift = -8
 		rankMask = bitset.Rank7
+		promotionMask = bitset.Rank1
+		everythingExceptPromotion = bitset.NotRank1
 	}
 	// move all pawns up one square, and again for two squares if starting on rank 2
 	pawns := p.Pieces(col, piece.PAWN)
@@ -87,7 +91,13 @@ func (p Position) findPawnMoves(col colour.Colour) []move.Move {
 	oneSquare := pawns.Shift(shift).And(emptySquares)
 	twoSquares := pawns.And(rankMask).Shift(shift).And(emptySquares).Shift(shift).And(emptySquares)
 
-	for _, bit := range oneSquare.SetBits() {
+	promotedPawns := oneSquare.And(promotionMask)
+	for _, bit := range promotedPawns.SetBits() {
+		for _, promotedPiece := range piece.PromotedPawnPieceCandidates {
+			moves = append(moves, move.NewPromotion(col, square.Square(bit-shift), square.Square(bit), promotedPiece))
+		}
+	}
+	for _, bit := range oneSquare.And(everythingExceptPromotion).SetBits() {
 		moves = append(moves, move.New(col, square.Square(bit-shift), square.Square(bit), piece.PAWN))
 	}
 	for _, bit := range twoSquares.SetBits() {
@@ -105,8 +115,14 @@ func (p Position) findPawnMoves(col colour.Colour) []move.Move {
 	}
 	otherColour := col.Other()
 	captureLeft := pawns.And(rankMask).Shift(shift).And(p.AllPieces(otherColour))
-	for _, bit := range captureLeft.SetBits() {
-		moves = append(moves, move.NewCapture(col, square.Square(bit-shift), square.Square(bit), piece.PAWN))
+	promotedPawns = captureLeft.And(promotionMask)
+	for _, bit := range promotedPawns.SetBits() {
+		for _, promotedPiece := range piece.PromotedPawnPieceCandidates {
+			moves = append(moves, move.NewPromotionCapture(col, square.Square(bit-shift), square.Square(bit), promotedPiece, p.PieceAt(uint(bit), otherColour)))
+		}
+	}
+	for _, bit := range captureLeft.And(everythingExceptPromotion).SetBits() {
+		moves = append(moves, move.NewCapture(col, square.Square(bit-shift), square.Square(bit), piece.PAWN, p.PieceAt(uint(bit), otherColour)))
 	}
 
 	if col == colour.White {
@@ -117,11 +133,17 @@ func (p Position) findPawnMoves(col colour.Colour) []move.Move {
 		rankMask = bitset.NotFile1
 	}
 	captureRight := pawns.And(rankMask).Shift(shift).And(p.AllPieces(otherColour))
-	for _, bit := range captureRight.SetBits() {
-		moves = append(moves, move.NewCapture(col, square.Square(bit-shift), square.Square(bit), piece.PAWN))
+	promotedPawns = captureRight.And(promotionMask)
+	for _, bit := range promotedPawns.SetBits() {
+		for _, promotedPiece := range piece.PromotedPawnPieceCandidates {
+			moves = append(moves, move.NewPromotionCapture(col, square.Square(bit-shift), square.Square(bit), promotedPiece, p.PieceAt(uint(bit), otherColour)))
+		}
+	}
+	for _, bit := range captureRight.And(everythingExceptPromotion).SetBits() {
+		moves = append(moves, move.NewCapture(col, square.Square(bit-shift), square.Square(bit), piece.PAWN, p.PieceAt(uint(bit), otherColour)))
 	}
 
-	//TODO: enpassant and promotion
+	//TODO: enpassant
 
 	return moves
 }
@@ -140,7 +162,7 @@ func (p Position) findKnightMoves(col colour.Colour) []move.Move {
 				// do nothing - square is occupied with a piece of my own colour
 			} else if p.AllPieces(otherColour).IsSet(uint(bit)) {
 				// capture
-				moves = append(moves, move.NewCapture(col, square.Square(startSq), square.Square(bit), piece.KNIGHT))
+				moves = append(moves, move.NewCapture(col, square.Square(startSq), square.Square(bit), piece.KNIGHT, p.PieceAt(uint(bit), otherColour)))
 			} else {
 				// empty square
 				moves = append(moves, move.New(col, square.Square(startSq), square.Square(bit), piece.KNIGHT))
@@ -182,7 +204,7 @@ func (p Position) findKingMoves(col colour.Colour) []move.Move {
 		for _, bit := range bs.SetBits() {
 			if p.AllPieces(otherColour).IsSet(uint(bit)) {
 				// capture
-				moves = append(moves, move.NewCapture(col, square.Square(startSq), square.Square(bit), piece.KING))
+				moves = append(moves, move.NewCapture(col, square.Square(startSq), square.Square(bit), piece.KING, p.PieceAt(uint(bit), otherColour)))
 			} else {
 				// empty square
 				moves = append(moves, move.New(col, square.Square(startSq), square.Square(bit), piece.KING))
@@ -294,7 +316,7 @@ func (p Position) _findForPiece(col colour.Colour, pieceType piece.Piece, direct
 						// do nothing - square is occupied with a piece of my own colour
 					} else if p.AllPieces(otherColour).IsSet(uint(bit)) {
 						// capture
-						moves = append(moves, move.NewCapture(col, square.Square(startSq), square.Square(bit), pieceType))
+						moves = append(moves, move.NewCapture(col, square.Square(startSq), square.Square(bit), pieceType, p.PieceAt(uint(bit), otherColour)))
 					} else {
 						panic(fmt.Sprintf("blocking square %d set but no piece present", blockingSquare))
 					}

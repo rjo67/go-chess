@@ -12,40 +12,33 @@ import (
 
 // Move stores information about a move
 type Move struct {
-	col       colour.Colour
-	from, to  square.Square
-	pieceType piece.Piece
-	capture   bool
-	castle    bool
+	col           colour.Colour
+	from, to      square.Square
+	pieceType     piece.Piece
+	castle        bool
+	promotedPiece *piece.Piece // set if promotion
+	capturedPiece *piece.Piece // set if capture
 }
 
 // New creates a new non-capture move
 func New(col colour.Colour, from, to square.Square, pieceType piece.Piece) Move {
-	return Move{col: col, from: from, to: to, pieceType: pieceType, capture: false}
+	return Move{col: col, from: from, to: to, pieceType: pieceType}
 }
 
 // NewCapture creates a new capture move
-func NewCapture(col colour.Colour, from, to square.Square, pieceType piece.Piece) Move {
-	return Move{col: col, from: from, to: to, pieceType: pieceType, capture: true}
+func NewCapture(col colour.Colour, from, to square.Square, pieceType piece.Piece, capturedPieceType piece.Piece) Move {
+	return Move{col: col, from: from, to: to, pieceType: pieceType, capturedPiece: &capturedPieceType}
 }
 
-// IsKingsMove returns true when this move involves the king (castling excluded)
-func (m Move) IsKingsMove() bool { return m.pieceType == piece.KING }
+// NewPromotion creates a new promotion move
+func NewPromotion(col colour.Colour, from, to square.Square, toPiece piece.Piece) Move {
+	return Move{col: col, from: from, to: to, pieceType: piece.PAWN, promotedPiece: &toPiece}
+}
 
-// IsCastles returns true when this move was "castles"
-func (m Move) IsCastles() bool { return m.castle }
-
-// From returns the move's source square
-func (m Move) From() square.Square { return m.from }
-
-// To returns the move's target square
-func (m Move) To() square.Square { return m.to }
-
-// Colour returns the colour of the move
-func (m Move) Colour() colour.Colour { return m.col }
-
-// PieceType returns the move's piece
-func (m Move) PieceType() piece.Piece { return m.pieceType }
+// NewPromotionCapture creates a new promotion move with capture
+func NewPromotionCapture(col colour.Colour, from, to square.Square, toPiece piece.Piece, capturedPieceType piece.Piece) Move {
+	return Move{col: col, from: from, to: to, pieceType: piece.PAWN, promotedPiece: &toPiece, capturedPiece: &capturedPieceType}
+}
 
 // CastleKingsSide creates O-O
 func CastleKingsSide(col colour.Colour) Move {
@@ -63,6 +56,30 @@ func CastleQueensSide(col colour.Colour) Move {
 	return Move{col: col, from: square.E8, to: square.C8, castle: true, pieceType: piece.KING}
 }
 
+// IsKingsMove returns true when this move involves the king (castling excluded)
+func (m Move) IsKingsMove() bool { return m.pieceType == piece.KING }
+
+// IsCastles returns true when this move was "castles"
+func (m Move) IsCastles() bool { return m.castle }
+
+// IsCapture returns true when this move was a capture
+func (m Move) IsCapture() bool { return m.capturedPiece != nil }
+
+// CapturedPiece returns the captured piece (only call if IsCapture()==true)
+func (m Move) CapturedPiece() piece.Piece { return *m.capturedPiece }
+
+// From returns the move's source square
+func (m Move) From() square.Square { return m.from }
+
+// To returns the move's target square
+func (m Move) To() square.Square { return m.to }
+
+// Colour returns the colour of the move
+func (m Move) Colour() colour.Colour { return m.col }
+
+// PieceType returns the move's piece
+func (m Move) PieceType() piece.Piece { return m.pieceType }
+
 func (m Move) String() string {
 	if m.castle {
 		if m.to == square.G1 || m.to == square.G8 {
@@ -70,10 +87,14 @@ func (m Move) String() string {
 		}
 		return "O-O-O"
 	}
-	if m.capture {
-		return fmt.Sprintf("%sx%s", m.from.String(), m.to.String())
+	var promotion string
+	if m.promotedPiece != nil {
+		promotion = fmt.Sprintf("=%s", m.promotedPiece.String(colour.White))
 	}
-	return fmt.Sprintf("%s%s", m.from.String(), m.to.String())
+	if m.capturedPiece != nil {
+		return fmt.Sprintf("%sx%s%s", m.from.String(), m.to.String(), promotion)
+	}
+	return fmt.Sprintf("%s%s%s", m.from.String(), m.to.String(), promotion)
 }
 
 // Search2 implements the algorithm as described in secition 2 of http://www.craftychess.com/hyatt/bitmaps.html

@@ -3,12 +3,165 @@ package position
 import (
 	"testing"
 
+	"github.com/rjo67/chess/move"
+
 	"github.com/rjo67/chess/bitset"
 	"github.com/rjo67/chess/piece"
 	"github.com/rjo67/chess/piece/colour"
 	"github.com/rjo67/chess/square"
 )
 
+func TestMakeMoveNonCapture(t *testing.T) {
+	posn, err := ParseFen("2K2r2/4P3/8/1Q6/8/8/8/3k4 w - - 0 1")
+	if err != nil {
+		t.Errorf("error parsing fen: %s", err)
+	} else {
+		queenBitset := bitset.NewFromSquares(square.B5)
+		movedQueenBitset := bitset.NewFromSquares(square.F1)
+		if posn.pieces[colour.White][piece.QUEEN].And(queenBitset).IsEmpty() {
+			t.Errorf("expected white queen at B5\n%s", posn.String())
+		}
+		if posn.allPieces[colour.White].And(queenBitset).IsEmpty() {
+			t.Errorf("allPieces wrong, no piece at B5\n%s", posn.String())
+		}
+		if posn.occupiedSquares.And(queenBitset).IsEmpty() {
+			t.Errorf("occupiedSquares wrong, no piece at B5\n%s", posn.String())
+		}
+
+		m := move.New(colour.White, square.B5, square.F1, piece.QUEEN)
+		posn.MakeMove(m)
+
+		// check after-effects of MakeMove
+		if !posn.pieces[colour.White][piece.QUEEN].And(queenBitset).IsEmpty() {
+			t.Errorf("expected no white queen at B5\n%s", posn.String())
+		}
+		if !posn.allPieces[colour.White].And(queenBitset).IsEmpty() {
+			t.Errorf("allPieces wrong, a piece at B5\n%s", posn.String())
+		}
+		if !posn.occupiedSquares.And(queenBitset).IsEmpty() {
+			t.Errorf("occupiedSquares wrong, a piece at B5\n%s", posn.String())
+		}
+		if posn.pieces[colour.White][piece.QUEEN].And(movedQueenBitset).IsEmpty() {
+			t.Errorf("expected white queen at F1\n%s", posn.String())
+		}
+		if posn.allPieces[colour.White].And(movedQueenBitset).IsEmpty() {
+			t.Errorf("allPieces wrong, no piece at F1\n%s", posn.String())
+		}
+		if posn.occupiedSquares.And(movedQueenBitset).IsEmpty() {
+			t.Errorf("occupiedSquares wrong, no piece at F1\n%s", posn.String())
+		}
+
+		posn.UnmakeMove(m)
+
+		// check after-effects of UnmakeMove
+		if posn.pieces[colour.White][piece.QUEEN].And(queenBitset).IsEmpty() {
+			t.Errorf("expected white queen at B5\n%s", posn.String())
+		}
+		if posn.allPieces[colour.White].And(queenBitset).IsEmpty() {
+			t.Errorf("allPieces wrong, no piece at B5\n%s", posn.String())
+		}
+		if posn.occupiedSquares.And(queenBitset).IsEmpty() {
+			t.Errorf("occupiedSquares wrong, no piece at B5\n%s", posn.String())
+		}
+		if !posn.pieces[colour.White][piece.QUEEN].And(movedQueenBitset).IsEmpty() {
+			t.Errorf("expected no white queen at F1\n%s", posn.String())
+		}
+		if !posn.allPieces[colour.White].And(movedQueenBitset).IsEmpty() {
+			t.Errorf("allPieces wrong, piece at F1\n%s", posn.String())
+		}
+		if !posn.occupiedSquares.And(movedQueenBitset).IsEmpty() {
+			t.Errorf("occupiedSquares wrong, piece at F1\n%s", posn.String())
+		}
+	}
+}
+
+func TestMakeMoveCapture(t *testing.T) {
+	posn, err := ParseFen("2K2r2/4P3/8/1Q6/3R4/3p4/8/3k4 w - - 0 1")
+	if err != nil {
+		t.Errorf("error parsing fen: %s", err)
+	} else {
+		rookBitset := bitset.NewFromSquares(square.D4)
+		capturedPieceBitset := bitset.NewFromSquares(square.D3)
+
+		// check pieces are where they should be
+		if posn.pieces[colour.White][piece.ROOK].And(rookBitset).IsEmpty() {
+			t.Errorf("expected white rook at D4\n%s", posn.String())
+		}
+		if posn.allPieces[colour.White].And(rookBitset).IsEmpty() {
+			t.Errorf("allPieces wrong, no piece at D4\n%s", posn.String())
+		}
+		if posn.occupiedSquares.And(rookBitset).IsEmpty() {
+			t.Errorf("occupiedSquares wrong, no piece at D4\n%s", posn.String())
+		}
+		if posn.pieces[colour.Black][piece.PAWN].And(capturedPieceBitset).IsEmpty() {
+			t.Errorf("expected black pawn at D3\n%s", posn.String())
+		}
+		if posn.allPieces[colour.Black].And(capturedPieceBitset).IsEmpty() {
+			t.Errorf("allPieces wrong, no piece at D3\n%s", posn.String())
+		}
+		if posn.occupiedSquares.And(capturedPieceBitset).IsEmpty() {
+			t.Errorf("occupiedSquares wrong, no piece at D3\n%s", posn.String())
+		}
+
+		m := move.NewCapture(colour.White, square.D4, square.D3, piece.ROOK, piece.PAWN)
+		posn.MakeMove(m)
+
+		// check after-effects of MakeMove
+		if !posn.pieces[colour.White][piece.ROOK].And(rookBitset).IsEmpty() {
+			t.Errorf("expected no white rook at D4\n%s", posn.String())
+		}
+		if !posn.allPieces[colour.White].And(rookBitset).IsEmpty() {
+			t.Errorf("allPieces wrong, a piece at D4\n%s", posn.String())
+		}
+		if !posn.occupiedSquares.And(rookBitset).IsEmpty() {
+			t.Errorf("occupiedSquares wrong, a piece at D4\n%s", posn.String())
+		}
+		// target square...
+		if posn.pieces[colour.White][piece.ROOK].And(capturedPieceBitset).IsEmpty() {
+			t.Errorf("expected white rook at D3\n%s", posn.String())
+		}
+		if posn.allPieces[colour.White].And(capturedPieceBitset).IsEmpty() {
+			t.Errorf("allPieces wrong, no piece at D3\n%s", posn.String())
+		}
+		if !posn.pieces[colour.Black][piece.PAWN].And(capturedPieceBitset).IsEmpty() {
+			t.Errorf("expected no black pawn at D3\n%s", posn.String())
+		}
+		if !posn.allPieces[colour.Black].And(capturedPieceBitset).IsEmpty() {
+			t.Errorf("allPieces wrong, no piece at D3\n%s", posn.String())
+		}
+		if posn.occupiedSquares.And(capturedPieceBitset).IsEmpty() {
+			t.Errorf("occupiedSquares wrong, no piece at D3\n%s", posn.String())
+		}
+
+		posn.UnmakeMove(m)
+
+		// check after-effects of UnmakeMove
+		if posn.pieces[colour.White][piece.ROOK].And(rookBitset).IsEmpty() {
+			t.Errorf("expected white rook at D4\n%s", posn.String())
+		}
+		if posn.allPieces[colour.White].And(rookBitset).IsEmpty() {
+			t.Errorf("allPieces wrong, no piece at D4\n%s", posn.String())
+		}
+		if posn.occupiedSquares.And(rookBitset).IsEmpty() {
+			t.Errorf("occupiedSquares wrong, no piece at D4\n%s", posn.String())
+		}
+		if !posn.pieces[colour.White][piece.ROOK].And(capturedPieceBitset).IsEmpty() {
+			t.Errorf("expected no white rook at D3\n%s", posn.String())
+		}
+		if !posn.allPieces[colour.White].And(capturedPieceBitset).IsEmpty() {
+			t.Errorf("allPieces wrong, piece at D3\n%s", posn.String())
+		}
+		if posn.pieces[colour.Black][piece.PAWN].And(capturedPieceBitset).IsEmpty() {
+			t.Errorf("expected black pawn at D3\n%s", posn.String())
+		}
+		if posn.allPieces[colour.Black].And(capturedPieceBitset).IsEmpty() {
+			t.Errorf("allPieces wrong, no piece at D3\n%s", posn.String())
+		}
+		if posn.occupiedSquares.And(capturedPieceBitset).IsEmpty() {
+			t.Errorf("occupiedSquares wrong, no piece at D3\n%s", posn.String())
+		}
+	}
+}
 func TestAttacksSquare(t *testing.T) {
 	data := []struct {
 		fen           string
