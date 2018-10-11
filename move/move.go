@@ -12,12 +12,13 @@ import (
 
 // Move stores information about a move
 type Move struct {
-	col           colour.Colour
-	from, to      square.Square
-	pieceType     piece.Piece
-	castle        bool
-	promotedPiece *piece.Piece // set if promotion
-	capturedPiece *piece.Piece // set if capture
+	col                       colour.Colour  // colour of piece making the move
+	pieceType                 piece.Piece    // piece making the move
+	from, to                  square.Square  // from and to squares
+	castle                    bool           // set if castles
+	promotedPiece             *piece.Piece   // set if promotion
+	capturedPiece             *piece.Piece   // set if capture
+	enpassantPawnRealLocation *bitset.BitSet // set if e.p., contains the 'real' square where the pawn was, e.g. move.To()==E6, enpassantPawnRealLocation==E5
 }
 
 // New creates a new non-capture move
@@ -28,6 +29,19 @@ func New(col colour.Colour, from, to square.Square, pieceType piece.Piece) Move 
 // NewCapture creates a new capture move
 func NewCapture(col colour.Colour, from, to square.Square, pieceType piece.Piece, capturedPieceType piece.Piece) Move {
 	return Move{col: col, from: from, to: to, pieceType: pieceType, capturedPiece: &capturedPieceType}
+}
+
+// NewEpCapture creates a new enpassant capture move
+func NewEpCapture(col colour.Colour, from, to square.Square) Move {
+	var shift int
+	if col == colour.White {
+		shift = -8 // e.g. black pawn is on E5, enpassant square is E6
+	} else {
+		shift = 8
+	}
+	enpassantPawnRealLocation := bitset.NewFromSquares(square.Square(int(to) + shift))
+	pi := piece.PAWN
+	return Move{col: col, from: from, to: to, pieceType: piece.PAWN, capturedPiece: &pi, enpassantPawnRealLocation: &enpassantPawnRealLocation}
 }
 
 // NewPromotion creates a new promotion move
@@ -56,14 +70,20 @@ func CastleQueensSide(col colour.Colour) Move {
 	return Move{col: col, from: square.E8, to: square.C8, castle: true, pieceType: piece.KING}
 }
 
-// IsKingsMove returns true when this move involves the king (castling excluded)
+// IsKingsMove returns true if this move involves the king (castling excluded)
 func (m Move) IsKingsMove() bool { return m.pieceType == piece.KING }
 
-// IsCastles returns true when this move was "castles"
+// IsCastles returns true if this move was "castles"
 func (m Move) IsCastles() bool { return m.castle }
 
-// IsCapture returns true when this move was a capture
+// IsCapture returns true if this move was a capture
 func (m Move) IsCapture() bool { return m.capturedPiece != nil }
+
+// IsEnpassant returns true if this move was an enpassant capture
+func (m Move) IsEnpassant() bool { return m.enpassantPawnRealLocation != nil }
+
+// EnpassantPawnRealLocation returns a bitset containing the square where the opponents pawn really was for an enpassant capture
+func (m Move) EnpassantPawnRealLocation() bitset.BitSet { return *m.enpassantPawnRealLocation }
 
 // CapturedPiece returns the captured piece (only call if IsCapture()==true)
 func (m Move) CapturedPiece() piece.Piece { return *m.capturedPiece }

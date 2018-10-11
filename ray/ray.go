@@ -379,3 +379,12 @@ var KingAttackBitSets = [65]bitset.BitSet{
 	newKingAttackBitset(55), newKingAttackBitset(56), newKingAttackBitset(57), newKingAttackBitset(58), newKingAttackBitset(59), newKingAttackBitset(60),
 	newKingAttackBitset(61), newKingAttackBitset(62), newKingAttackBitset(63), newKingAttackBitset(64),
 }
+
+// AttacksOnEnpassantSquares stores bitsets of the squares which attack the 8 enpassant squares (A6..H6 for white moves, A3..H3 for black
+// Usage: AttacksOnEnpassantSquares[colour.White][4] returns a bitset of the (two) squares which attack D6
+// Runs from file 1 to file 8 ([1] to [8]
+var AttacksOnEnpassantSquares = [2][9]bitset.BitSet{{bitset.New(0), bitset.New(0x4000000000), bitset.New(0xA000000000), bitset.New(0x5000000000),
+	bitset.New(0x2800000000), bitset.New(0x1400000000), bitset.New(0x0A00000000), bitset.New(0x0500000000), bitset.New(0x0200000000)},
+	{bitset.New(0), bitset.New(0x40000000), bitset.New(0xA0000000), bitset.New(0x50000000), bitset.New(0x28000000),
+		bitset.New(0x14000000), bitset.New(0x0A000000), bitset.New(0x05000000), bitset.New(0x02000000)},
+}

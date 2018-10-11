@@ -52,19 +52,29 @@ func NewPosition(whitePieces, blackPieces map[piece.Piece]bitset.BitSet) Positio
 // MakeMove updates the position with the given move
 //TODO pawn promotion, castling
 func (p *Position) MakeMove(m move.Move) {
-	if m.IsCapture() {
+	var enpassantPawnRealLocation bitset.BitSet
+	if m.IsEnpassant() {
+		// remove other-coloured piece, which is not at m.To(), but rather m.EnpassantPawnReallyOn()
+		enpassantPawnRealLocation = m.EnpassantPawnRealLocation()
+		otherColour := m.Colour().Other()
+		p.pieces[otherColour][m.CapturedPiece()] = p.pieces[otherColour][m.CapturedPiece()].Xor(enpassantPawnRealLocation)
+		p.allPieces[otherColour] = p.allPieces[otherColour].Xor(enpassantPawnRealLocation)
+	} else if m.IsCapture() {
 		// remove other-coloured piece at m.To()
 		targetBs := bitset.NewFromSquares(m.To())
 		otherColour := m.Colour().Other()
-		p.pieces[otherColour][m.CapturedPiece()] = p.pieces[otherColour][m.CapturedPiece()].AndNot(targetBs)
-		p.allPieces[otherColour] = p.allPieces[otherColour].AndNot(targetBs)
+		p.pieces[otherColour][m.CapturedPiece()] = p.pieces[otherColour][m.CapturedPiece()].Xor(targetBs)
+		p.allPieces[otherColour] = p.allPieces[otherColour].Xor(targetBs)
 	}
 	// move our colour piece from m.From() to m.To()
 	bs := bitset.NewFromSquares(m.From(), m.To())
 	p.pieces[m.Colour()][m.PieceType()] = p.pieces[m.Colour()][m.PieceType()].Xor(bs)
 	p.allPieces[m.Colour()] = p.allPieces[m.Colour()].Xor(bs)
 
-	if m.IsCapture() {
+	if m.IsEnpassant() {
+		// must also clear m.EnpassantPawnRealLocation()
+		p.occupiedSquares = p.occupiedSquares.Xor(bs).Xor(enpassantPawnRealLocation)
+	} else if m.IsCapture() {
 		// must clear m.From(), but m.To() is still occupied
 		p.occupiedSquares.Clear(uint(m.From()))
 	} else {
@@ -75,7 +85,14 @@ func (p *Position) MakeMove(m move.Move) {
 
 // UnmakeMove updates the position with the reverse of the given move
 func (p *Position) UnmakeMove(m move.Move) {
-	if m.IsCapture() {
+	var enpassantPawnRealLocation bitset.BitSet
+	if m.IsEnpassant() {
+		// restore other-coloured piece -- not at m.To(), but rather at m.EnpassantPawnReallyOn()
+		enpassantPawnRealLocation = m.EnpassantPawnRealLocation()
+		otherColour := m.Colour().Other()
+		p.pieces[otherColour][m.CapturedPiece()] = p.pieces[otherColour][m.CapturedPiece()].Xor(enpassantPawnRealLocation)
+		p.allPieces[otherColour] = p.allPieces[otherColour].Xor(enpassantPawnRealLocation)
+	} else if m.IsCapture() {
 		// restore other-coloured piece at m.To()
 		targetBs := bitset.NewFromSquares(m.To())
 		otherColour := m.Colour().Other()
@@ -87,7 +104,10 @@ func (p *Position) UnmakeMove(m move.Move) {
 	p.pieces[m.Colour()][m.PieceType()] = p.pieces[m.Colour()][m.PieceType()].Xor(bs)
 	p.allPieces[m.Colour()] = p.allPieces[m.Colour()].Xor(bs)
 
-	if m.IsCapture() {
+	if m.IsEnpassant() {
+		// must set m.EnpassantPawnRealLocation()
+		p.occupiedSquares = p.occupiedSquares.Xor(bs).Xor(enpassantPawnRealLocation)
+	} else if m.IsCapture() {
 		// must set m.From() again, but m.To() is still occupied
 		p.occupiedSquares.Set(uint(m.From()))
 	} else {
@@ -226,21 +246,6 @@ func (p Position) String() string {
 	sb.WriteString("+--------+\n")
 
 	return sb.String()
-}
-
-// 'package private', only called by Builder
-func (p *Position) setEnpassantSquare(sq *square.Square) {
-	p.enpassantSquare = sq
-}
-
-// 'package private', only called by Builder
-func (p *Position) setHalfmoveClock(clock int) {
-	p.halfmoveClock = clock
-}
-
-// 'package private', only called by Builder
-func (p *Position) setFullmoveNbr(move int) {
-	p.fullmoveNbr = move
 }
 
 // 'package private', only called by Builder

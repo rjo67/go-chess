@@ -116,15 +116,18 @@ func TestField3(t *testing.T) {
 func TestField4(t *testing.T) {
 	_, err := ParseFen("7k/8/8/8/8/8/8/7K w KQkq a0 0 0")
 	checkErrorMessage(err, "unrecognised square", t)
-	posn, err := ParseFen("7k/8/8/8/8/8/8/7K w KQkq a5 0 0")
+	posn, err := ParseFen("7k/8/8/8/8/8/8/7K w KQkq a6 0 0")
 	if err != nil {
 		t.Errorf("unexpected error: %s", err.Error())
+	} else {
+		if posn.EnpassantSquare() == nil {
+			t.Error("enpassant square in posn is nil")
+		} else if *posn.EnpassantSquare() != square.A6 {
+			t.Errorf("expected A6 but got: %d", *posn.EnpassantSquare())
+		}
 	}
-	if posn.EnpassantSquare() == nil {
-		t.Error("enpassant square in posn is nil")
-	} else if *posn.EnpassantSquare() != square.A5 {
-		t.Errorf("expected A5 but got: %d", *posn.EnpassantSquare())
-	}
+	posn, err = ParseFen("8/5k2/8/2Pp4/2B5/1K6/8/8 b - d6 0 1")
+	checkErrorMessage(err, "invalid e.p. square 'D6' for active colour: B", t)
 }
 
 func TestField5(t *testing.T) {

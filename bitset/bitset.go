@@ -83,6 +83,7 @@ func (bs BitSet) And(other BitSet) BitSet {
 }
 
 // AndNot returns a new bitset resulting from the logical AND of the current bitset and the inverse of the supplied bitset
+// TODO: This is really the same as Xor
 func (bs BitSet) AndNot(other BitSet) BitSet {
 	return BitSet{bs.val & ^other.val}
 }

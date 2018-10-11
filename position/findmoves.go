@@ -143,7 +143,12 @@ func (p Position) findPawnMoves(col colour.Colour) []move.Move {
 		moves = append(moves, move.NewCapture(col, square.Square(bit-shift), square.Square(bit), piece.PAWN, p.PieceAt(uint(bit), otherColour)))
 	}
 
-	//TODO: enpassant
+	if p.EnpassantSquare() != nil {
+		epAttacks := ray.AttacksOnEnpassantSquares[col][p.EnpassantSquare().File()]
+		for _, bit := range epAttacks.And(pawns).SetBits() {
+			moves = append(moves, move.NewEpCapture(col, square.Square(bit), *p.EnpassantSquare()))
+		}
+	}
 
 	return moves
 }
@@ -267,6 +272,7 @@ func (p Position) PieceAttacksSquare(col colour.Colour, pieceType piece.Piece, t
 		possibleMoves := ray.KingAttackBitSets[targetSq].And(p.Pieces(col, pieceType))
 		return !possibleMoves.IsEmpty()
 	case piece.PAWN:
+		//TODO take enpassant square into account
 		if col == colour.White {
 			bs := bitset.NewFromSquares(targetSq)
 			possibleMoves := (bs.And(bitset.NotFile1).Shift(-7)).Or(bs.And(bitset.NotFile8).Shift(-9))

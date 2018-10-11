@@ -82,9 +82,10 @@ func (b *Builder) FullmoveNbr(moveNbr int) *Builder {
 // Build builds a position object
 func (b *Builder) Build() Position {
 	posn := NewPosition(b.pieces[colour.White], b.pieces[colour.Black])
-	posn.setEnpassantSquare(b.enpassantSquare)
-	posn.setHalfmoveClock(b.halfmoveClock)
-	posn.setFullmoveNbr(b.fullmoveNbr)
+	posn.enpassantSquare = b.enpassantSquare
+	posn.halfmoveClock = b.halfmoveClock
+	posn.fullmoveNbr = b.fullmoveNbr
+	posn.activeColour = b.activeColour
 	for _, col := range colour.AllColours {
 		posn.setCastlingAvailability(col, true, b.castlingAvailabilityKingsSide[col])
 		posn.setCastlingAvailability(col, false, b.castlingAvailabilityQueensSide[col])

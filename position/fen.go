@@ -75,7 +75,7 @@ func ParseFen(fen string) (Position, error) {
 	builder.CastlingAvailability(colour.Black, false, castlingAvailabilityQueensSide[colour.Black])
 
 	// fourth field: enpassant square
-	enpassantSquare, err := processField4(fields[3])
+	enpassantSquare, err := processField4(fields[3], activeColour)
 	if err != nil {
 		return Position{}, err
 	}
@@ -203,13 +203,16 @@ func processField3(field string) ([]bool, []bool, error) {
 }
 
 // fourth field: enpassant square
-func processField4(field string) (*square.Square, error) {
+func processField4(field string, activeColour colour.Colour) (*square.Square, error) {
 	if field == "-" {
 		return nil, nil
 	}
 	sq, err := square.FromString(field)
 	if err != nil {
 		return nil, err
+	}
+	if (activeColour == colour.White && sq.Rank() != 6) || (activeColour == colour.Black && sq.Rank() != 3) {
+		return nil, ParseError{fmt.Sprintf("invalid e.p. square '%s' for active colour: %s", sq.String(), activeColour.String()), 3}
 	}
 	return &sq, nil
 }
