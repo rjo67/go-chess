@@ -1,6 +1,8 @@
 package position
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/rjo67/chess/bitset"
@@ -13,154 +15,294 @@ import (
 func TestMakeMoveNonCapture(t *testing.T) {
 	posn, err := ParseFen("2K2r2/4P3/8/1Q6/8/8/8/3k4 w - - 0 1")
 	if err != nil {
-		t.Errorf("error parsing fen: %s", err)
-	} else {
-		queenBitset := bitset.NewFromSquares(square.B5)
-		movedQueenBitset := bitset.NewFromSquares(square.F1)
-		if posn.pieces[colour.White][piece.QUEEN].And(queenBitset).IsEmpty() {
-			t.Errorf("expected white queen at B5\n%s", posn.String())
-		}
-		if posn.allPieces[colour.White].And(queenBitset).IsEmpty() {
-			t.Errorf("allPieces wrong, no piece at B5\n%s", posn.String())
-		}
-		if posn.occupiedSquares.And(queenBitset).IsEmpty() {
-			t.Errorf("occupiedSquares wrong, no piece at B5\n%s", posn.String())
-		}
+		t.Fatalf("error parsing fen: %s", err)
+	}
+	queenBitset := bitset.NewFromSquares(square.B5)
+	movedQueenBitset := bitset.NewFromSquares(square.F1)
+	if posn.pieces[colour.White][piece.QUEEN].And(queenBitset).IsEmpty() {
+		t.Fatalf("expected white queen at B5\n%s", posn.String())
+	}
+	if posn.allPieces[colour.White].And(queenBitset).IsEmpty() {
+		t.Fatalf("allPieces wrong, no piece at B5\n%s", posn.String())
+	}
+	if posn.occupiedSquares.And(queenBitset).IsEmpty() {
+		t.Fatalf("occupiedSquares wrong, no piece at B5\n%s", posn.String())
+	}
 
-		m := move.New(colour.White, square.B5, square.F1, piece.QUEEN)
-		posn.MakeMove(m)
+	m := move.New(colour.White, square.B5, square.F1, piece.QUEEN)
+	posn.MakeMove(m)
 
-		// check after-effects of MakeMove
-		if !posn.pieces[colour.White][piece.QUEEN].And(queenBitset).IsEmpty() {
-			t.Errorf("expected no white queen at B5\n%s", posn.String())
-		}
-		if !posn.allPieces[colour.White].And(queenBitset).IsEmpty() {
-			t.Errorf("allPieces wrong, a piece at B5\n%s", posn.String())
-		}
-		if !posn.occupiedSquares.And(queenBitset).IsEmpty() {
-			t.Errorf("occupiedSquares wrong, a piece at B5\n%s", posn.String())
-		}
-		if posn.pieces[colour.White][piece.QUEEN].And(movedQueenBitset).IsEmpty() {
-			t.Errorf("expected white queen at F1\n%s", posn.String())
-		}
-		if posn.allPieces[colour.White].And(movedQueenBitset).IsEmpty() {
-			t.Errorf("allPieces wrong, no piece at F1\n%s", posn.String())
-		}
-		if posn.occupiedSquares.And(movedQueenBitset).IsEmpty() {
-			t.Errorf("occupiedSquares wrong, no piece at F1\n%s", posn.String())
-		}
+	// check after-effects of MakeMove
+	if !posn.pieces[colour.White][piece.QUEEN].And(queenBitset).IsEmpty() {
+		t.Fatalf("expected no white queen at B5\n%s", posn.String())
+	}
+	if !posn.allPieces[colour.White].And(queenBitset).IsEmpty() {
+		t.Fatalf("allPieces wrong, a piece at B5\n%s", posn.String())
+	}
+	if !posn.occupiedSquares.And(queenBitset).IsEmpty() {
+		t.Fatalf("occupiedSquares wrong, a piece at B5\n%s", posn.String())
+	}
+	if posn.pieces[colour.White][piece.QUEEN].And(movedQueenBitset).IsEmpty() {
+		t.Fatalf("expected white queen at F1\n%s", posn.String())
+	}
+	if posn.allPieces[colour.White].And(movedQueenBitset).IsEmpty() {
+		t.Fatalf("allPieces wrong, no piece at F1\n%s", posn.String())
+	}
+	if posn.occupiedSquares.And(movedQueenBitset).IsEmpty() {
+		t.Fatalf("occupiedSquares wrong, no piece at F1\n%s", posn.String())
+	}
 
-		posn.UnmakeMove(m)
+	posn.UnmakeMove(m)
 
-		// check after-effects of UnmakeMove
-		if posn.pieces[colour.White][piece.QUEEN].And(queenBitset).IsEmpty() {
-			t.Errorf("expected white queen at B5\n%s", posn.String())
-		}
-		if posn.allPieces[colour.White].And(queenBitset).IsEmpty() {
-			t.Errorf("allPieces wrong, no piece at B5\n%s", posn.String())
-		}
-		if posn.occupiedSquares.And(queenBitset).IsEmpty() {
-			t.Errorf("occupiedSquares wrong, no piece at B5\n%s", posn.String())
-		}
-		if !posn.pieces[colour.White][piece.QUEEN].And(movedQueenBitset).IsEmpty() {
-			t.Errorf("expected no white queen at F1\n%s", posn.String())
-		}
-		if !posn.allPieces[colour.White].And(movedQueenBitset).IsEmpty() {
-			t.Errorf("allPieces wrong, piece at F1\n%s", posn.String())
-		}
-		if !posn.occupiedSquares.And(movedQueenBitset).IsEmpty() {
-			t.Errorf("occupiedSquares wrong, piece at F1\n%s", posn.String())
-		}
+	// check after-effects of UnmakeMove
+	if posn.pieces[colour.White][piece.QUEEN].And(queenBitset).IsEmpty() {
+		t.Fatalf("expected white queen at B5\n%s", posn.String())
+	}
+	if posn.allPieces[colour.White].And(queenBitset).IsEmpty() {
+		t.Fatalf("allPieces wrong, no piece at B5\n%s", posn.String())
+	}
+	if posn.occupiedSquares.And(queenBitset).IsEmpty() {
+		t.Fatalf("occupiedSquares wrong, no piece at B5\n%s", posn.String())
+	}
+	if !posn.pieces[colour.White][piece.QUEEN].And(movedQueenBitset).IsEmpty() {
+		t.Fatalf("expected no white queen at F1\n%s", posn.String())
+	}
+	if !posn.allPieces[colour.White].And(movedQueenBitset).IsEmpty() {
+		t.Fatalf("allPieces wrong, piece at F1\n%s", posn.String())
+	}
+	if !posn.occupiedSquares.And(movedQueenBitset).IsEmpty() {
+		t.Fatalf("occupiedSquares wrong, piece at F1\n%s", posn.String())
+	}
+}
+
+func TestMakePromotionNonCapture(t *testing.T) {
+	posn, err := ParseFen("2K2r2/4P3/8/8/8/8/8/3k4 w - - 0 1")
+	if err != nil {
+		t.Fatalf("error parsing fen: %s", err)
+	}
+	pawnBitset := bitset.NewFromSquares(square.E7)
+	if posn.pieces[colour.White][piece.PAWN].And(pawnBitset).IsEmpty() {
+		t.Fatalf("expected white pawn at E7\n%s", posn.String())
+	}
+	if posn.allPieces[colour.White].And(pawnBitset).IsEmpty() {
+		t.Fatalf("allPieces wrong, no piece at E7\n%s", posn.String())
+	}
+	if posn.occupiedSquares.And(pawnBitset).IsEmpty() {
+		t.Fatalf("occupiedSquares wrong, no piece at E7\n%s", posn.String())
+	}
+
+	m := move.NewPromotion(colour.White, square.E7, square.E8, piece.QUEEN)
+	posn.MakeMove(m)
+
+	promotedQueenBitset := bitset.NewFromSquares(square.E8)
+	// check after-effects of MakeMove
+	if posn.pieces[colour.White][piece.QUEEN].And(promotedQueenBitset).IsEmpty() {
+		t.Fatalf("expected white queen at E8\n%s", posn.String())
+	}
+	if posn.allPieces[colour.White].And(promotedQueenBitset).IsEmpty() {
+		t.Fatalf("allPieces wrong, no piece at E8\n%s", posn.String())
+	}
+	if posn.occupiedSquares.And(promotedQueenBitset).IsEmpty() {
+		t.Fatalf("occupiedSquares wrong, no piece at E8\n%s", posn.String())
+	}
+	if !posn.pieces[colour.White][piece.PAWN].And(pawnBitset).IsEmpty() {
+		t.Fatalf("expected no white pawn at E7\n%s", posn.String())
+	}
+	if !posn.allPieces[colour.White].And(pawnBitset).IsEmpty() {
+		t.Fatalf("allPieces wrong, a piece at E7\n%s", posn.String())
+	}
+	if !posn.occupiedSquares.And(pawnBitset).IsEmpty() {
+		t.Fatalf("occupiedSquares wrong, a piece at E7\n%s", posn.String())
+	}
+
+	posn.UnmakeMove(m)
+
+	// check after-effects of UnmakeMove
+	if posn.pieces[colour.White][piece.PAWN].And(pawnBitset).IsEmpty() {
+		t.Fatalf("expected white queen at E7\n%s", posn.String())
+	}
+	if posn.allPieces[colour.White].And(pawnBitset).IsEmpty() {
+		t.Fatalf("allPieces wrong, no piece at E7\n%s", posn.String())
+	}
+	if posn.occupiedSquares.And(pawnBitset).IsEmpty() {
+		t.Fatalf("occupiedSquares wrong, no piece at E7\n%s", posn.String())
+	}
+	if !posn.pieces[colour.White][piece.QUEEN].And(promotedQueenBitset).IsEmpty() {
+		t.Fatalf("expected no white queen at E8\n%s", posn.String())
+	}
+	if !posn.allPieces[colour.White].And(promotedQueenBitset).IsEmpty() {
+		t.Fatalf("allPieces wrong, piece at E8\n%s", posn.String())
+	}
+	if !posn.occupiedSquares.And(promotedQueenBitset).IsEmpty() {
+		t.Fatalf("occupiedSquares wrong, piece at E8\n%s", posn.String())
 	}
 }
 
 func TestMakeMoveCapture(t *testing.T) {
 	posn, err := ParseFen("2K2r2/4P3/8/1Q6/3R4/3p4/8/3k4 w - - 0 1")
 	if err != nil {
-		t.Errorf("error parsing fen: %s", err)
-	} else {
-		rookBitset := bitset.NewFromSquares(square.D4)
-		capturedPieceBitset := bitset.NewFromSquares(square.D3)
+		t.Fatalf("error parsing fen: %s", err)
+	}
+	rookBitset := bitset.NewFromSquares(square.D4)
+	capturedPieceBitset := bitset.NewFromSquares(square.D3)
 
-		// check pieces are where they should be
-		if posn.pieces[colour.White][piece.ROOK].And(rookBitset).IsEmpty() {
-			t.Errorf("expected white rook at D4\n%s", posn.String())
-		}
-		if posn.allPieces[colour.White].And(rookBitset).IsEmpty() {
-			t.Errorf("allPieces wrong, no piece at D4\n%s", posn.String())
-		}
-		if posn.occupiedSquares.And(rookBitset).IsEmpty() {
-			t.Errorf("occupiedSquares wrong, no piece at D4\n%s", posn.String())
-		}
-		if posn.pieces[colour.Black][piece.PAWN].And(capturedPieceBitset).IsEmpty() {
-			t.Errorf("expected black pawn at D3\n%s", posn.String())
-		}
-		if posn.allPieces[colour.Black].And(capturedPieceBitset).IsEmpty() {
-			t.Errorf("allPieces wrong, no piece at D3\n%s", posn.String())
-		}
-		if posn.occupiedSquares.And(capturedPieceBitset).IsEmpty() {
-			t.Errorf("occupiedSquares wrong, no piece at D3\n%s", posn.String())
-		}
+	// check pieces are where they should be
+	if posn.pieces[colour.White][piece.ROOK].And(rookBitset).IsEmpty() {
+		t.Fatalf("expected white rook at D4\n%s", posn.String())
+	}
+	if posn.allPieces[colour.White].And(rookBitset).IsEmpty() {
+		t.Fatalf("allPieces wrong, no piece at D4\n%s", posn.String())
+	}
+	if posn.occupiedSquares.And(rookBitset).IsEmpty() {
+		t.Fatalf("occupiedSquares wrong, no piece at D4\n%s", posn.String())
+	}
+	if posn.pieces[colour.Black][piece.PAWN].And(capturedPieceBitset).IsEmpty() {
+		t.Fatalf("expected black pawn at D3\n%s", posn.String())
+	}
+	if posn.allPieces[colour.Black].And(capturedPieceBitset).IsEmpty() {
+		t.Fatalf("allPieces wrong, no piece at D3\n%s", posn.String())
+	}
+	if posn.occupiedSquares.And(capturedPieceBitset).IsEmpty() {
+		t.Fatalf("occupiedSquares wrong, no piece at D3\n%s", posn.String())
+	}
 
-		m := move.NewCapture(colour.White, square.D4, square.D3, piece.ROOK, piece.PAWN)
-		posn.MakeMove(m)
+	m := move.NewCapture(colour.White, square.D4, square.D3, piece.ROOK, piece.PAWN)
+	posn.MakeMove(m)
 
-		// check after-effects of MakeMove
-		if !posn.pieces[colour.White][piece.ROOK].And(rookBitset).IsEmpty() {
-			t.Errorf("expected no white rook at D4\n%s", posn.String())
-		}
-		if !posn.allPieces[colour.White].And(rookBitset).IsEmpty() {
-			t.Errorf("allPieces wrong, a piece at D4\n%s", posn.String())
-		}
-		if !posn.occupiedSquares.And(rookBitset).IsEmpty() {
-			t.Errorf("occupiedSquares wrong, a piece at D4\n%s", posn.String())
-		}
-		// target square...
-		if posn.pieces[colour.White][piece.ROOK].And(capturedPieceBitset).IsEmpty() {
-			t.Errorf("expected white rook at D3\n%s", posn.String())
-		}
-		if posn.allPieces[colour.White].And(capturedPieceBitset).IsEmpty() {
-			t.Errorf("allPieces wrong, no piece at D3\n%s", posn.String())
-		}
-		if !posn.pieces[colour.Black][piece.PAWN].And(capturedPieceBitset).IsEmpty() {
-			t.Errorf("expected no black pawn at D3\n%s", posn.String())
-		}
-		if !posn.allPieces[colour.Black].And(capturedPieceBitset).IsEmpty() {
-			t.Errorf("allPieces wrong, no piece at D3\n%s", posn.String())
-		}
-		if posn.occupiedSquares.And(capturedPieceBitset).IsEmpty() {
-			t.Errorf("occupiedSquares wrong, no piece at D3\n%s", posn.String())
-		}
+	// check after-effects of MakeMove
+	if !posn.pieces[colour.White][piece.ROOK].And(rookBitset).IsEmpty() {
+		t.Fatalf("expected no white rook at D4\n%s", posn.String())
+	}
+	if !posn.allPieces[colour.White].And(rookBitset).IsEmpty() {
+		t.Fatalf("allPieces wrong, a piece at D4\n%s", posn.String())
+	}
+	if !posn.occupiedSquares.And(rookBitset).IsEmpty() {
+		t.Fatalf("occupiedSquares wrong, a piece at D4\n%s", posn.String())
+	}
+	// target square...
+	if posn.pieces[colour.White][piece.ROOK].And(capturedPieceBitset).IsEmpty() {
+		t.Fatalf("expected white rook at D3\n%s", posn.String())
+	}
+	if posn.allPieces[colour.White].And(capturedPieceBitset).IsEmpty() {
+		t.Fatalf("allPieces wrong, no piece at D3\n%s", posn.String())
+	}
+	if !posn.pieces[colour.Black][piece.PAWN].And(capturedPieceBitset).IsEmpty() {
+		t.Fatalf("expected no black pawn at D3\n%s", posn.String())
+	}
+	if !posn.allPieces[colour.Black].And(capturedPieceBitset).IsEmpty() {
+		t.Fatalf("allPieces wrong, no piece at D3\n%s", posn.String())
+	}
+	if posn.occupiedSquares.And(capturedPieceBitset).IsEmpty() {
+		t.Fatalf("occupiedSquares wrong, no piece at D3\n%s", posn.String())
+	}
 
-		posn.UnmakeMove(m)
+	posn.UnmakeMove(m)
 
-		// check after-effects of UnmakeMove
-		if posn.pieces[colour.White][piece.ROOK].And(rookBitset).IsEmpty() {
-			t.Errorf("expected white rook at D4\n%s", posn.String())
-		}
-		if posn.allPieces[colour.White].And(rookBitset).IsEmpty() {
-			t.Errorf("allPieces wrong, no piece at D4\n%s", posn.String())
-		}
-		if posn.occupiedSquares.And(rookBitset).IsEmpty() {
-			t.Errorf("occupiedSquares wrong, no piece at D4\n%s", posn.String())
-		}
-		if !posn.pieces[colour.White][piece.ROOK].And(capturedPieceBitset).IsEmpty() {
-			t.Errorf("expected no white rook at D3\n%s", posn.String())
-		}
-		if !posn.allPieces[colour.White].And(capturedPieceBitset).IsEmpty() {
-			t.Errorf("allPieces wrong, piece at D3\n%s", posn.String())
-		}
-		if posn.pieces[colour.Black][piece.PAWN].And(capturedPieceBitset).IsEmpty() {
-			t.Errorf("expected black pawn at D3\n%s", posn.String())
-		}
-		if posn.allPieces[colour.Black].And(capturedPieceBitset).IsEmpty() {
-			t.Errorf("allPieces wrong, no piece at D3\n%s", posn.String())
-		}
-		if posn.occupiedSquares.And(capturedPieceBitset).IsEmpty() {
-			t.Errorf("occupiedSquares wrong, no piece at D3\n%s", posn.String())
-		}
+	// check after-effects of UnmakeMove
+	if posn.pieces[colour.White][piece.ROOK].And(rookBitset).IsEmpty() {
+		t.Fatalf("expected white rook at D4\n%s", posn.String())
+	}
+	if posn.allPieces[colour.White].And(rookBitset).IsEmpty() {
+		t.Fatalf("allPieces wrong, no piece at D4\n%s", posn.String())
+	}
+	if posn.occupiedSquares.And(rookBitset).IsEmpty() {
+		t.Fatalf("occupiedSquares wrong, no piece at D4\n%s", posn.String())
+	}
+	if !posn.pieces[colour.White][piece.ROOK].And(capturedPieceBitset).IsEmpty() {
+		t.Fatalf("expected no white rook at D3\n%s", posn.String())
+	}
+	if !posn.allPieces[colour.White].And(capturedPieceBitset).IsEmpty() {
+		t.Fatalf("allPieces wrong, piece at D3\n%s", posn.String())
+	}
+	if posn.pieces[colour.Black][piece.PAWN].And(capturedPieceBitset).IsEmpty() {
+		t.Fatalf("expected black pawn at D3\n%s", posn.String())
+	}
+	if posn.allPieces[colour.Black].And(capturedPieceBitset).IsEmpty() {
+		t.Fatalf("allPieces wrong, no piece at D3\n%s", posn.String())
+	}
+	if posn.occupiedSquares.And(capturedPieceBitset).IsEmpty() {
+		t.Fatalf("occupiedSquares wrong, no piece at D3\n%s", posn.String())
 	}
 }
+
+func TestMakePromotionCapture(t *testing.T) {
+	posn, err := ParseFen("2K2r2/4P3/8/8/8/8/8/3k4 w - - 0 1")
+	if err != nil {
+		t.Fatalf("error parsing fen: %s", err)
+	}
+
+	pawnBitset := bitset.NewFromSquares(square.E7)
+	if posn.pieces[colour.White][piece.PAWN].And(pawnBitset).IsEmpty() {
+		t.Fatalf("expected white pawn at E7\n%s", posn.String())
+	}
+	if posn.allPieces[colour.White].And(pawnBitset).IsEmpty() {
+		t.Fatalf("allPieces wrong, no piece at E7\n%s", posn.String())
+	}
+	if posn.occupiedSquares.And(pawnBitset).IsEmpty() {
+		t.Fatalf("occupiedSquares wrong, no piece at E7\n%s", posn.String())
+	}
+
+	m := move.NewPromotionCapture(colour.White, square.E7, square.F8, piece.QUEEN, piece.ROOK)
+	posn.MakeMove(m)
+
+	// check after-effects of MakeMove
+	promotedQueenBitset := bitset.NewFromSquares(square.F8)
+	capturedPieceBitset := promotedQueenBitset
+
+	if posn.pieces[colour.White][piece.QUEEN].And(promotedQueenBitset).IsEmpty() {
+		t.Fatalf("expected white queen at F8\n%s", posn.String())
+	}
+	if posn.allPieces[colour.White].And(promotedQueenBitset).IsEmpty() {
+		t.Fatalf("allPieces wrong, no piece at F8\n%s", posn.String())
+	}
+	if !posn.pieces[colour.White][piece.PAWN].And(pawnBitset).IsEmpty() {
+		t.Fatalf("expected no white pawn at E7\n%s", posn.String())
+	}
+	if !posn.allPieces[colour.White].And(pawnBitset).IsEmpty() {
+		t.Fatalf("allPieces wrong, a piece at E7\n%s", posn.String())
+	}
+	if !posn.occupiedSquares.And(pawnBitset).IsEmpty() {
+		t.Fatalf("occupiedSquares wrong, a piece at E7\n%s", posn.String())
+	}
+	if !posn.pieces[colour.Black][piece.ROOK].And(capturedPieceBitset).IsEmpty() {
+		t.Fatalf("expected no black rook at F8\n%s", posn.String())
+	}
+	if !posn.allPieces[colour.Black].And(capturedPieceBitset).IsEmpty() {
+		t.Fatalf("allPieces wrong, expected no piece at F8\n%s", posn.String())
+	}
+	if posn.occupiedSquares.And(promotedQueenBitset).IsEmpty() {
+		t.Fatalf("occupiedSquares wrong, no piece at F8\n%s", posn.String())
+	}
+
+	posn.UnmakeMove(m)
+
+	// check after-effects of UnmakeMove
+	if posn.pieces[colour.White][piece.PAWN].And(pawnBitset).IsEmpty() {
+		t.Fatalf("expected white pawn at E7\n%s", posn.String())
+	}
+	if posn.allPieces[colour.White].And(pawnBitset).IsEmpty() {
+		t.Fatalf("allPieces wrong, no piece at E7\n%s", posn.String())
+	}
+	if posn.occupiedSquares.And(pawnBitset).IsEmpty() {
+		t.Fatalf("occupiedSquares wrong, no piece at E7\n%s", posn.String())
+	}
+	if !posn.pieces[colour.White][piece.QUEEN].And(promotedQueenBitset).IsEmpty() {
+		t.Fatalf("expected no white queen at F8\n%s", posn.String())
+	}
+	if !posn.allPieces[colour.White].And(promotedQueenBitset).IsEmpty() {
+		t.Fatalf("allPieces wrong, piece at F8\n%s", posn.String())
+	}
+	if posn.pieces[colour.Black][piece.ROOK].And(capturedPieceBitset).IsEmpty() {
+		t.Fatalf("expected black rook at F8\n%s", posn.String())
+	}
+	if posn.allPieces[colour.Black].And(capturedPieceBitset).IsEmpty() {
+		t.Fatalf("allPieces wrong, expected a piece at F8\n%s", posn.String())
+	}
+	if posn.occupiedSquares.And(capturedPieceBitset).IsEmpty() {
+		t.Fatalf("occupiedSquares wrong, expected piece at F8\n%s", posn.String())
+	}
+}
+
 func TestAttacksSquare(t *testing.T) {
 	data := []struct {
 		fen           string
@@ -190,12 +332,11 @@ func TestAttacksSquare(t *testing.T) {
 	for testNbr, d := range data {
 		posn, err := ParseFen(d.fen)
 		if err != nil {
-			t.Errorf("error parsing fen '%s': %s", d.fen, err)
-		} else {
-			for i, sq := range d.targetSquares {
-				if d.expected[i] != posn.PieceAttacksSquare(d.col, d.pieceType, sq) {
-					t.Errorf("wrong result for test#%d.%d", testNbr, i)
-				}
+			t.Fatalf("error parsing fen '%s': %s", d.fen, err)
+		}
+		for i, sq := range d.targetSquares {
+			if d.expected[i] != posn.PieceAttacksSquare(d.col, d.pieceType, sq) {
+				t.Fatalf("wrong result for test#%d.%d", testNbr, i)
 			}
 		}
 	}
@@ -219,28 +360,27 @@ func TestAttacks(t *testing.T) {
 	for testNbr, d := range data {
 		posn, err := ParseFen(d.fen)
 		if err != nil {
-			t.Errorf("error parsing fen '%s': %s", d.fen, err)
-		} else {
-			bs := posn.Attacks(d.startSquare, colour.White)
-			if len(d.expectedWhiteSetBits) != bs.Cardinality() {
-				t.Errorf("test %d (white): got cardinality %d (expected %d) bitset:\n%s", testNbr, bs.Cardinality(), len(d.expectedWhiteSetBits), bs.String())
-			} else {
-				checkBits(testNbr, bs, d.expectedWhiteSetBits, t)
-			}
-			bs = posn.Attacks(d.startSquare, colour.Black)
-			if len(d.expectedBlackSetBits) != bs.Cardinality() {
-				t.Errorf("test %d (black): got cardinality %d (expected %d) bitset:\n%s", testNbr, bs.Cardinality(), len(d.expectedBlackSetBits), bs.String())
-			} else {
-				checkBits(testNbr, bs, d.expectedBlackSetBits, t)
-			}
-			anyBits := append(d.expectedWhiteSetBits, d.expectedBlackSetBits...)
-			bs = posn.Attacks(d.startSquare, colour.AnyColour)
-			if len(anyBits) != bs.Cardinality() {
-				t.Errorf("test %d (any colour): got cardinality %d (expected %d) bitset:\n%s", testNbr, bs.Cardinality(), len(anyBits), bs.String())
-			} else {
-				checkBits(testNbr, bs, anyBits, t)
-			}
+			t.Fatalf("error parsing fen '%s': %s", d.fen, err)
 		}
+
+		bs := posn.Attacks(d.startSquare, colour.White)
+		if len(d.expectedWhiteSetBits) != bs.Cardinality() {
+			t.Fatalf("test %d (white): got cardinality %d (expected %d) bitset:\n%s", testNbr, bs.Cardinality(), len(d.expectedWhiteSetBits), bs.String())
+		} else {
+			checkBits(testNbr, bs, d.expectedWhiteSetBits, t)
+		}
+		bs = posn.Attacks(d.startSquare, colour.Black)
+		if len(d.expectedBlackSetBits) != bs.Cardinality() {
+			t.Fatalf("test %d (black): got cardinality %d (expected %d) bitset:\n%s", testNbr, bs.Cardinality(), len(d.expectedBlackSetBits), bs.String())
+		}
+		checkBits(testNbr, bs, d.expectedBlackSetBits, t)
+
+		anyBits := append(d.expectedWhiteSetBits, d.expectedBlackSetBits...)
+		bs = posn.Attacks(d.startSquare, colour.AnyColour)
+		if len(anyBits) != bs.Cardinality() {
+			t.Fatalf("test %d (any colour): got cardinality %d (expected %d) bitset:\n%s", testNbr, bs.Cardinality(), len(anyBits), bs.String())
+		}
+		checkBits(testNbr, bs, anyBits, t)
 	}
 }
 
@@ -293,16 +433,16 @@ func TestEpCaptureChecksOpponent(t *testing.T) {
 	doTest(moveData{"8/5k2/8/2Pp4/2B5/1K6/8/8 w - d6 0 1", []int{15, -1, -1, -1, -1, 1440467}}, t)
 }
 func TestShortCastlingChecksOpponent(t *testing.T) {
-	doTest(moveData{"5k2/8/8/8/8/8/8/4K2R w K - 0 1", []int{15, -1, -1, -1, -1, 661072}}, t)
-	doTest(moveData{"4k2r/8/8/8/8/8/8/4K2R b k - 0 1", []int{15, -1, -1, -1, -1, 661072}}, t)
+	doTest(moveData{"5k2/8/8/8/8/8/8/4K2R w K - 0 1", []int{15, 66, 1198, -1, -1 /*661072*/}}, t)
+	//doTest(moveData{"4k2r/8/8/8/8/8/8/4K2R b k - 0 1", []int{15, -1, -1, -1, -1, 661072}}, t)
 }
 func TestLongCastlingChecksOpponent(t *testing.T) {
 	doTest(moveData{"3k4/8/8/8/8/8/8/R3K3 w Q - 0 1", []int{16, -1, -1, -1, -1, 803711}}, t)
 	doTest(moveData{"r3k3/8/8/8/8/8/8/3K4 b q - 0 1", []int{16, -1, -1, -1, -1, 803711}}, t)
 }
 func TestCastlingIncludingLosingOrRookCapture(t *testing.T) {
-	doTest(moveData{"r3k2r/1b4bq/8/8/8/8/7B/R3K2R w KQkq - 0 1", []int{26, -1, -1, 1274206}}, t)
-	doTest(moveData{"r3k2r/1b4bq/8/8/8/8/7B/R3K2R b KQkq - 0 1", []int{47, -1, -1, 1274206}}, t)
+	doTest(moveData{"r3k2r/1b4bq/8/8/8/8/7B/R3K2R w KQkq - 0 1", []int{26, 1141, -1, 1274206}}, t)
+	//doTest(moveData{"r3k2r/1b4bq/8/8/8/8/7B/R3K2R b KQkq - 0 1", []int{47, -1, -1, 1274206}}, t)
 }
 func TestCastlingPrevented(t *testing.T) {
 	doTest(moveData{"r3k2r/8/5Q2/8/8/3q4/8/R3K2R w KQkq - 0 1", []int{44, -1, -1, 1720476}}, t)
@@ -340,25 +480,64 @@ func TestUnderPromoteToGiveCheck(t *testing.T) {
 	doTest(moveData{"8/8/8/8/8/k7/p1K5/8 b - - 0 1", []int{-1, -1, -1, -1, -1, 92683}}, t)
 }
 func TestDoubleCheck(t *testing.T) {
-	doTest(moveData{"8/5k2/8/5N2/5Q2/2K5/8/8 w - - 0 1", []int{37, -1, -1, 23527}}, t)
-	doTest(moveData{"8/8/2k5/5q2/5n2/8/5K2/8 b - - 0 1", []int{37, -1, -1, 23527}}, t)
+	doTest(moveData{"8/5k2/8/5N2/5Q2/2K5/8/8 w - - 0 1", []int{37, 183, 6559, 23527}}, t)
+	doTest(moveData{"8/8/2k5/5q2/5n2/8/5K2/8 b - - 0 1", []int{37, 183, 6559, 23527}}, t)
 }
 
 func doTest(data moveData, t *testing.T) {
-	position, err := ParseFen(data.fen)
+	posn, err := ParseFen(data.fen)
 	if err != nil {
-		t.Errorf("could not parse fen: %s, err: %s", data.fen, err.Error())
-	} else {
-		if data.expectedNbrMoves[0] == -1 {
-			t.Logf("skipping test")
-		} else {
-			moves := position.FindMoves(position.activeColour)
-			if len(moves) != data.expectedNbrMoves[0] {
-				t.Errorf("expected %d moves but got %d, fen: %s, total: %v", data.expectedNbrMoves[0], len(moves), data.fen, moves)
+		t.Fatalf("could not parse fen: %s, err: %s", data.fen, err.Error())
+	}
+	for depth, expectedNbrMoves := range data.expectedNbrMoves {
+		if depth < 2 {
+			if expectedNbrMoves != -1 {
+				var moveMapString strings.Builder // for logging i/c of error
+				moveMap := perft(posn, depth+1)
+				var moveCount int
+				if depth == 0 {
+					moveCount = len(moveMap) // the initial moves
+					moveMapString.WriteString(fmt.Sprintf("%v", moveMap))
+				} else {
+					var moveNbr int
+					for key, entry := range moveMap {
+						moveNbr++
+						moveCount += len(entry)
+						moveMapString.WriteString(fmt.Sprintf("%3d: %8s\t%3d\n", moveNbr, key, len(entry)))
+					}
+				}
+				if moveCount != expectedNbrMoves {
+					//	t.Fatalf("depth: %d, expected %d moves but got %d, fen: %s, total: %v", depth+1, expectedNbrMoves, len(moves), data.fen, moves)
+					t.Fatalf("depth: %d, expected %d moves but got %d, fen: %s, moveMap:\n%s", depth+1, expectedNbrMoves, moveCount, data.fen, moveMapString.String())
+				}
 			}
 		}
 	}
+}
 
+func perft(posn Position, depth int) map[string][]move.Move {
+	moveMap := make(map[string][]move.Move, 0)
+	// fill move map with starting moves
+	for _, startMove := range posn.FindMoves(posn.activeColour) {
+		posn.MakeMove(startMove)
+		moveMap[startMove.String()] = f2(posn, depth)
+		posn.UnmakeMove(startMove)
+	}
+	return moveMap
+}
+
+func f2(posn Position, depth int) []move.Move {
+	if depth == 1 {
+		return []move.Move{}
+	}
+	movesAtNextDepth := make([]move.Move, 0, 300)
+	for _, m := range posn.FindMoves(posn.activeColour) {
+		movesAtNextDepth = append(movesAtNextDepth, m)
+		posn.MakeMove(m)
+		movesAtNextDepth = append(movesAtNextDepth, f2(posn, depth-1)...)
+		posn.UnmakeMove(m)
+	}
+	return movesAtNextDepth
 }
 
 func checkBits(testNbr int, bs bitset.BitSet, expectedSetBits []int, t *testing.T) {
@@ -369,6 +548,6 @@ func checkBits(testNbr int, bs bitset.BitSet, expectedSetBits []int, t *testing.
 		}
 	}
 	if len(errors) != 0 {
-		t.Errorf("test %d: found %d errors (%v) for bitset:\n%s", testNbr, len(errors), errors, bs.String())
+		t.Fatalf("test %d: found %d errors (%v) for bitset:\n%s", testNbr, len(errors), errors, bs.String())
 	}
 }

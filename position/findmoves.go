@@ -16,14 +16,39 @@ func (p Position) FindMoves(col colour.Colour) []move.Move {
 	potentiallyIllegalMoves := p.FindPotentiallyIllegalMoves(col)
 
 	moves := make([]move.Move, 0, len(potentiallyIllegalMoves))
-	otherCol := col.Other()
-	opponentsKing := square.Square(p.Pieces(otherCol, piece.KING).SetBits()[0])
+	otherColour := col.Other()
+	opponentsKing := square.Square(p.Pieces(otherColour, piece.KING).SetBits()[0])
 	myKing := square.Square(p.Pieces(col, piece.KING).SetBits()[0])
 
 	for _, move := range potentiallyIllegalMoves {
 		valid := true
 		if move.IsCastles() {
-			// ok
+			// castle out of check is not allowed
+			if p.AnyPieceAttacksSquare(otherColour, myKing) {
+				valid = false
+			} else {
+				// check if castling allowed (relevant squares are free, and not moving into check)
+				var bitsetToCheck bitset.BitSet
+				var squaresToCheck []square.Square
+				if move.IsKingsSideCastles() {
+					bitsetToCheck = kingssideCastlingsBitMaps[col]
+					squaresToCheck = kingssideCastlingsSquares[col]
+				} else {
+					bitsetToCheck = queenssideCastlingsBitMaps[col]
+					squaresToCheck = queenssideCastlingsSquares[col]
+				}
+				if p.OccupiedSquares().And(bitsetToCheck).IsEmpty() {
+					// anything attacking the relevant squares?
+					for _, sq := range squaresToCheck {
+						if p.AnyPieceAttacksSquare(otherColour, sq) {
+							valid = false
+							break
+						}
+					}
+				} else {
+					valid = false
+				}
+			}
 		} else {
 			if move.IsKingsMove() {
 				// is king adjacent to other king
@@ -32,7 +57,7 @@ func (p Position) FindMoves(col colour.Colour) []move.Move {
 				} else {
 					// is king moving into check..?
 					p.MakeMove(move)
-					if p.AnyPieceAttacksSquare(otherCol, move.To()) {
+					if p.AnyPieceAttacksSquare(otherColour, move.To()) {
 						valid = false
 					}
 					p.UnmakeMove(move)
@@ -40,7 +65,7 @@ func (p Position) FindMoves(col colour.Colour) []move.Move {
 			} else {
 				// for other moves: is king now in check
 				p.MakeMove(move)
-				if p.AnyPieceAttacksSquare(otherCol, myKing) {
+				if p.AnyPieceAttacksSquare(otherColour, myKing) {
 					valid = false
 				}
 				p.UnmakeMove(move)
@@ -192,15 +217,22 @@ var kingssideCastlingsBitMaps = [2]bitset.BitSet{bitset.New(0x06), bitset.New(0x
 // these squares cannot be attacked
 var kingssideCastlingsSquares = [2][]square.Square{{square.F1, square.G1}, {square.F8, square.G8}}
 
+// kingssideCastlingsRookMove is the XOR for rook's move, kingsside castling
+var kingssideCastlingsRookMove = [2]bitset.BitSet{bitset.New(0x05), bitset.New(0x0500000000000000)}
+
 // these squares must be empty
 var queenssideCastlingsBitMaps = [2]bitset.BitSet{bitset.New(0x70), bitset.New(0x7000000000000000)}
 
 // these squares cannot be attacked
 var queenssideCastlingsSquares = [2][]square.Square{{square.C1, square.D1}, {square.C8, square.D8}}
 
+// queenssideCastlingsRookMove is the XOR for rook's move, queenssside castling
+var queenssideCastlingsRookMove = [2]bitset.BitSet{bitset.New(0x90), bitset.New(0x9000000000000000)}
+
 // in which directions can the 'castling fields' possibly be attacked?
 var castlingAttackDirections = [][]ray.Direction{{ray.NORTHWEST, ray.NORTH, ray.NORTHEAST}, {ray.SOUTHWEST, ray.SOUTH, ray.SOUTHEAST}}
 
+// returns castling-moves if theoretically possible, does not check if they are legal
 func (p Position) findKingMoves(col colour.Colour) []move.Move {
 	moves := make([]move.Move, 0, 10)
 	otherColour := col.Other()
@@ -216,37 +248,13 @@ func (p Position) findKingMoves(col colour.Colour) []move.Move {
 			}
 		}
 	}
+
+	// castling moves are added without checking for legality
 	if p.CastlingAvailability(col, true) {
-		// check if kings-side castling allowed
-		if p.OccupiedSquares().And(kingssideCastlingsBitMaps[col]).Val() == 0 {
-			// anything attacking the relevant squares?
-			canCastle := true
-			for _, sq := range kingssideCastlingsSquares[col] {
-				if p.AnyPieceAttacksSquare(otherColour, sq) {
-					canCastle = false
-					break
-				}
-			}
-			if canCastle {
-				moves = append(moves, move.CastleKingsSide(col))
-			}
-		}
+		moves = append(moves, move.CastleKingsSide(col))
 	}
 	if p.CastlingAvailability(col, false) {
-		// check if queens-side castling allowed
-		if p.OccupiedSquares().And(queenssideCastlingsBitMaps[col]).Cardinality() == 0 {
-			// anything attacking the relevant squares?
-			canCastle := true
-			for _, sq := range queenssideCastlingsSquares[col] {
-				if p.AnyPieceAttacksSquare(otherColour, sq) {
-					canCastle = false
-					break
-				}
-			}
-			if canCastle {
-				moves = append(moves, move.CastleQueensSide(col))
-			}
-		}
+		moves = append(moves, move.CastleQueensSide(col))
 	}
 	return moves
 }
