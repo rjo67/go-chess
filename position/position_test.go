@@ -2,6 +2,7 @@ package position
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -11,6 +12,14 @@ import (
 	"github.com/rjo67/chess/piece/colour"
 	"github.com/rjo67/chess/square"
 )
+
+func TestSizeOfPosition(t *testing.T) {
+	posn, err := ParseFen("2K2r2/4P3/8/1Q6/8/8/8/3k4 w - - 0 1")
+	if err != nil {
+		t.Fatalf("error parsing fen: %s", err)
+	}
+	fmt.Printf("size of position object: %d\n", reflect.TypeOf(posn).Size())
+}
 
 func TestMakeMoveNonCapture(t *testing.T) {
 	posn, err := ParseFen("2K2r2/4P3/8/1Q6/8/8/8/3k4 w - - 0 1")
@@ -513,7 +522,7 @@ func TestPosn5(t *testing.T) {
 	doTest(moveData{"rnbqkb1r/pp1p1ppp/2p5/4P3/2B5/8/PPP1NnPP/RNBQK2R w KQkq - 0 6", []int{42, 1352, 53392}}, t)
 }
 func TestPosn6(t *testing.T) {
-	doTest(moveData{"r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10", []int{46, 2079, 89890, 3894594, 164075551}}, t)
+	doTest(moveData{"r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10", []int{46, 2079, 89890, 3894594 /*, 164075551*/}}, t)
 }
 func TestNumpty2(t *testing.T) {
 	doTest(moveData{"8/p7/8/1P6/K1k3p1/6P1/7P/8 w - - 0 10", []int{5, 39, 237, 2002, 14062, 120995, 966152}}, t)

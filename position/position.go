@@ -52,18 +52,19 @@ func NewPosition(whitePieces, blackPieces map[piece.Piece]bitset.BitSet) Positio
 
 // MakeMove updates the position with the given move
 func (p *Position) MakeMove(m move.Move) {
+	myColour := m.Colour()
 	otherColour := m.Colour().Other()
 	if m.IsCastles() {
 		// move rook (the king's move will be taken care of later)
 		var rooksMove bitset.BitSet
 		if m.IsKingsSideCastles() {
-			rooksMove = kingssideCastlingsRookMove[m.Colour()]
+			rooksMove = kingssideCastlingsRookMove[myColour]
 			// castlingAvailability...Side set lower down
 		} else if m.IsQueensSideCastles() {
-			rooksMove = queenssideCastlingsRookMove[m.Colour()]
+			rooksMove = queenssideCastlingsRookMove[myColour]
 		}
-		p.pieces[m.Colour()][piece.ROOK] = p.pieces[m.Colour()][piece.ROOK].Xor(rooksMove)
-		p.allPieces[m.Colour()] = p.allPieces[m.Colour()].Xor(rooksMove)
+		p.pieces[myColour][piece.ROOK] = p.pieces[myColour][piece.ROOK].Xor(rooksMove)
+		p.allPieces[myColour] = p.allPieces[myColour].Xor(rooksMove)
 		p.occupiedSquares = p.occupiedSquares.Xor(rooksMove)
 	} else if m.IsEnpassant() {
 		// remove other-coloured piece, which is not at m.To(), but rather m.EnpassantPawnReallyOn()
@@ -74,10 +75,10 @@ func (p *Position) MakeMove(m move.Move) {
 			BothBs := bitset.NewFromSquares(m.From(), m.To())
 			FromBs := bitset.NewFromSquares(m.From())
 			ToBs := bitset.NewFromSquares(m.To())
-			p.pieces[m.Colour()][piece.PAWN] = p.pieces[m.Colour()][piece.PAWN].Xor(FromBs)
-			p.pieces[m.Colour()][m.PromotedPiece()] = p.pieces[m.Colour()][m.PromotedPiece()].Xor(ToBs)
+			p.pieces[myColour][piece.PAWN] = p.pieces[myColour][piece.PAWN].Xor(FromBs)
+			p.pieces[myColour][m.PromotedPiece()] = p.pieces[myColour][m.PromotedPiece()].Xor(ToBs)
 			p.pieces[otherColour][m.CapturedPiece()] = p.pieces[otherColour][m.CapturedPiece()].Xor(ToBs)
-			p.allPieces[m.Colour()] = p.allPieces[m.Colour()].Xor(BothBs)
+			p.allPieces[myColour] = p.allPieces[myColour].Xor(BothBs)
 			p.allPieces[otherColour] = p.allPieces[otherColour].Xor(ToBs)
 
 			// just remove the piece at m.From() -- there is a (new) piece at m.To()
@@ -87,9 +88,9 @@ func (p *Position) MakeMove(m move.Move) {
 			BothBs := bitset.NewFromSquares(m.From(), m.To())
 			FromBs := bitset.NewFromSquares(m.From())
 			ToBs := bitset.NewFromSquares(m.To())
-			p.pieces[m.Colour()][piece.PAWN] = p.pieces[m.Colour()][piece.PAWN].Xor(FromBs)
-			p.pieces[m.Colour()][m.PromotedPiece()] = p.pieces[m.Colour()][m.PromotedPiece()].Xor(ToBs)
-			p.allPieces[m.Colour()] = p.allPieces[m.Colour()].Xor(BothBs)
+			p.pieces[myColour][piece.PAWN] = p.pieces[myColour][piece.PAWN].Xor(FromBs)
+			p.pieces[myColour][m.PromotedPiece()] = p.pieces[myColour][m.PromotedPiece()].Xor(ToBs)
+			p.allPieces[myColour] = p.allPieces[myColour].Xor(BothBs)
 
 			p.occupiedSquares = p.occupiedSquares.Xor(BothBs)
 		}
@@ -102,8 +103,8 @@ func (p *Position) MakeMove(m move.Move) {
 	if !m.IsPromotion() {
 		// move our colour piece from m.From() to m.To()
 		bs := bitset.NewFromSquares(m.From(), m.To())
-		p.pieces[m.Colour()][m.PieceType()] = p.pieces[m.Colour()][m.PieceType()].Xor(bs)
-		p.allPieces[m.Colour()] = p.allPieces[m.Colour()].Xor(bs)
+		p.pieces[myColour][m.PieceType()] = p.pieces[myColour][m.PieceType()].Xor(bs)
+		p.allPieces[myColour] = p.allPieces[myColour].Xor(bs)
 
 		if m.IsEnpassant() {
 			// must also clear m.EnpassantPawnRealLocation()
@@ -116,43 +117,35 @@ func (p *Position) MakeMove(m move.Move) {
 		}
 		// remove castling rights on king move
 		if m.IsKingsMove() {
-			if p.castlingAvailabilityKingsSide[m.Colour()] {
+			if p.castlingAvailabilityKingsSide[myColour] {
 				m.SetCastleBeforeMove(true)
-				p.castlingAvailabilityKingsSide[m.Colour()] = false
+				p.castlingAvailabilityKingsSide[myColour] = false
 			}
-			if p.castlingAvailabilityQueensSide[m.Colour()] {
+			if p.castlingAvailabilityQueensSide[myColour] {
 				m.SetCastleBeforeMove(false)
-				p.castlingAvailabilityQueensSide[m.Colour()] = false
+				p.castlingAvailabilityQueensSide[myColour] = false
 			}
 		} else if m.PieceType() == piece.ROOK {
 			// remove castling rights on rook move
-			if (m.Colour() == colour.White && m.From() == square.A1) ||
-				(m.Colour() == colour.Black && m.From() == square.A8) {
-				if p.castlingAvailabilityQueensSide[m.Colour()] {
-					m.SetCastleBeforeMove(false)
-					p.castlingAvailabilityQueensSide[m.Colour()] = false
-				}
-			} else if (m.Colour() == colour.White && m.From() == square.H1) ||
-				(m.Colour() == colour.Black && m.From() == square.H8) {
-				if p.castlingAvailabilityKingsSide[m.Colour()] {
-					m.SetCastleBeforeMove(true)
-					p.castlingAvailabilityKingsSide[m.Colour()] = false
-				}
+			if p.castlingAvailabilityQueensSide[myColour] &&
+				((myColour == colour.White && m.From() == square.A1) || (myColour == colour.Black && m.From() == square.A8)) {
+				m.SetCastleBeforeMove(false)
+				p.castlingAvailabilityQueensSide[myColour] = false
+			} else if p.castlingAvailabilityKingsSide[myColour] &&
+				((myColour == colour.White && m.From() == square.H1) || (myColour == colour.Black && m.From() == square.H8)) {
+				m.SetCastleBeforeMove(true)
+				p.castlingAvailabilityKingsSide[myColour] = false
 			}
 		}
 		// remove castling rights FOR OTHER SIDE if necessary
-		if (m.Colour() == colour.Black && m.To() == square.A1) ||
-			(m.Colour() == colour.White && m.To() == square.A8) {
-			if p.castlingAvailabilityQueensSide[otherColour] {
-				m.SetOpponentCastleBeforeMove(false)
-				p.castlingAvailabilityQueensSide[otherColour] = false
-			}
-		} else if (m.Colour() == colour.Black && m.To() == square.H1) ||
-			(m.Colour() == colour.White && m.To() == square.H8) {
-			if p.castlingAvailabilityKingsSide[otherColour] {
-				m.SetOpponentCastleBeforeMove(true)
-				p.castlingAvailabilityKingsSide[otherColour] = false
-			}
+		if p.castlingAvailabilityQueensSide[otherColour] &&
+			((myColour == colour.Black && m.To() == square.A1) || (myColour == colour.White && m.To() == square.A8)) {
+			m.SetOpponentCastleBeforeMove(false)
+			p.castlingAvailabilityQueensSide[otherColour] = false
+		} else if p.castlingAvailabilityKingsSide[otherColour] &&
+			((myColour == colour.Black && m.To() == square.H1) || (myColour == colour.White && m.To() == square.H8)) {
+			m.SetOpponentCastleBeforeMove(true)
+			p.castlingAvailabilityKingsSide[otherColour] = false
 		}
 	}
 	p.activeColour = p.activeColour.Other()
@@ -168,17 +161,18 @@ func (p *Position) MakeMove(m move.Move) {
 
 // UnmakeMove updates the position with the reverse of the given move
 func (p *Position) UnmakeMove(m move.Move) {
+	myColour := m.Colour()
 	otherColour := m.Colour().Other()
 	if m.IsCastles() {
 		// move rook back (the king's move will be taken care of later)
 		var rooksMove bitset.BitSet
 		if m.IsKingsSideCastles() {
-			rooksMove = kingssideCastlingsRookMove[m.Colour()]
+			rooksMove = kingssideCastlingsRookMove[myColour]
 		} else if m.IsQueensSideCastles() {
-			rooksMove = queenssideCastlingsRookMove[m.Colour()]
+			rooksMove = queenssideCastlingsRookMove[myColour]
 		}
-		p.pieces[m.Colour()][piece.ROOK] = p.pieces[m.Colour()][piece.ROOK].Xor(rooksMove)
-		p.allPieces[m.Colour()] = p.allPieces[m.Colour()].Xor(rooksMove)
+		p.pieces[myColour][piece.ROOK] = p.pieces[myColour][piece.ROOK].Xor(rooksMove)
+		p.allPieces[myColour] = p.allPieces[myColour].Xor(rooksMove)
 		p.occupiedSquares = p.occupiedSquares.Xor(rooksMove)
 	}
 	var enpassantPawnRealLocation bitset.BitSet
@@ -192,10 +186,10 @@ func (p *Position) UnmakeMove(m move.Move) {
 			BothBs := bitset.NewFromSquares(m.From(), m.To())
 			FromBs := bitset.NewFromSquares(m.From())
 			ToBs := bitset.NewFromSquares(m.To())
-			p.pieces[m.Colour()][piece.PAWN] = p.pieces[m.Colour()][piece.PAWN].Xor(FromBs)
-			p.pieces[m.Colour()][m.PromotedPiece()] = p.pieces[m.Colour()][m.PromotedPiece()].Xor(ToBs)
+			p.pieces[myColour][piece.PAWN] = p.pieces[myColour][piece.PAWN].Xor(FromBs)
+			p.pieces[myColour][m.PromotedPiece()] = p.pieces[myColour][m.PromotedPiece()].Xor(ToBs)
 			p.pieces[otherColour][m.CapturedPiece()] = p.pieces[otherColour][m.CapturedPiece()].Xor(ToBs)
-			p.allPieces[m.Colour()] = p.allPieces[m.Colour()].Xor(BothBs)
+			p.allPieces[myColour] = p.allPieces[myColour].Xor(BothBs)
 			p.allPieces[otherColour] = p.allPieces[otherColour].Xor(ToBs)
 
 			// just restore the piece at m.From() -- there is already a (new) piece at m.To()
@@ -205,9 +199,9 @@ func (p *Position) UnmakeMove(m move.Move) {
 			BothBs := bitset.NewFromSquares(m.From(), m.To())
 			FromBs := bitset.NewFromSquares(m.From())
 			ToBs := bitset.NewFromSquares(m.To())
-			p.pieces[m.Colour()][piece.PAWN] = p.pieces[m.Colour()][piece.PAWN].Xor(FromBs)
-			p.pieces[m.Colour()][m.PromotedPiece()] = p.pieces[m.Colour()][m.PromotedPiece()].Xor(ToBs)
-			p.allPieces[m.Colour()] = p.allPieces[m.Colour()].Xor(BothBs)
+			p.pieces[myColour][piece.PAWN] = p.pieces[myColour][piece.PAWN].Xor(FromBs)
+			p.pieces[myColour][m.PromotedPiece()] = p.pieces[myColour][m.PromotedPiece()].Xor(ToBs)
+			p.allPieces[myColour] = p.allPieces[myColour].Xor(BothBs)
 			p.occupiedSquares = p.occupiedSquares.Xor(BothBs)
 		}
 	} else if m.IsCapture() {
@@ -219,8 +213,8 @@ func (p *Position) UnmakeMove(m move.Move) {
 
 	if !m.IsPromotion() {
 		bs := bitset.NewFromSquares(m.From(), m.To())
-		p.pieces[m.Colour()][m.PieceType()] = p.pieces[m.Colour()][m.PieceType()].Xor(bs)
-		p.allPieces[m.Colour()] = p.allPieces[m.Colour()].Xor(bs)
+		p.pieces[myColour][m.PieceType()] = p.pieces[myColour][m.PieceType()].Xor(bs)
+		p.allPieces[myColour] = p.allPieces[myColour].Xor(bs)
 
 		if m.IsEnpassant() {
 			// must set m.EnpassantPawnRealLocation()
@@ -234,37 +228,29 @@ func (p *Position) UnmakeMove(m move.Move) {
 		// restore castling rights on king or rook move
 		if m.IsKingsMove() {
 			if m.CouldCastleBeforeMove(true) {
-				p.castlingAvailabilityKingsSide[m.Colour()] = true
+				p.castlingAvailabilityKingsSide[myColour] = true
 			}
 			if m.CouldCastleBeforeMove(false) {
-				p.castlingAvailabilityQueensSide[m.Colour()] = true
+				p.castlingAvailabilityQueensSide[myColour] = true
 			}
 		} else if m.PieceType() == piece.ROOK {
 			// restore castling rights on rook move
-			if (m.Colour() == colour.White && m.From() == square.A1) ||
-				(m.Colour() == colour.Black && m.From() == square.A8) {
-				if m.CouldCastleBeforeMove(false) {
-					p.castlingAvailabilityQueensSide[m.Colour()] = true
-				}
-			} else if (m.Colour() == colour.White && m.From() == square.H1) ||
-				(m.Colour() == colour.Black && m.From() == square.H8) {
-				if m.CouldCastleBeforeMove(true) {
-					p.castlingAvailabilityKingsSide[m.Colour()] = true
-				}
+			if m.CouldCastleBeforeMove(false) &&
+				((myColour == colour.White && m.From() == square.A1) || (myColour == colour.Black && m.From() == square.A8)) {
+				p.castlingAvailabilityQueensSide[myColour] = true
+			} else if m.CouldCastleBeforeMove(true) &&
+				((myColour == colour.White && m.From() == square.H1) || (myColour == colour.Black && m.From() == square.H8)) {
+				p.castlingAvailabilityKingsSide[myColour] = true
 			}
 		}
 
 		// restore castling rights FOR OTHER SIDE if necessary
-		if (m.Colour() == colour.Black && m.To() == square.A1) ||
-			(m.Colour() == colour.White && m.To() == square.A8) {
-			if m.OpponentCouldCastleBeforeMove(false) {
-				p.castlingAvailabilityQueensSide[otherColour] = true
-			}
-		} else if (m.Colour() == colour.Black && m.To() == square.H1) ||
-			(m.Colour() == colour.White && m.To() == square.H8) {
-			if m.OpponentCouldCastleBeforeMove(true) {
-				p.castlingAvailabilityKingsSide[otherColour] = true
-			}
+		if m.OpponentCouldCastleBeforeMove(false) &&
+			((myColour == colour.Black && m.To() == square.A1) || (myColour == colour.White && m.To() == square.A8)) {
+			p.castlingAvailabilityQueensSide[otherColour] = true
+		} else if m.OpponentCouldCastleBeforeMove(true) &&
+			((myColour == colour.Black && m.To() == square.H1) || (myColour == colour.White && m.To() == square.H8)) {
+			p.castlingAvailabilityKingsSide[otherColour] = true
 		}
 	}
 
