@@ -10,21 +10,27 @@ import (
 	"github.com/rjo67/chess/square"
 )
 
-var kingssideMask int32 = 0x1
-var queenssideMask = kingssideMask << 1
+// various masks to access bits in 'castlingInfo'
+var myColourKingssideMask int32 = 0x1
+var myColourQueenssideMask = myColourKingssideMask << 1
+var opponentsColourKingssideMask int32 = 0x4
+var opponentsColourQueenssideMask = opponentsColourKingssideMask << 1
 
 // Move stores information about a move
+//
+// Castling info is stored in an int 'castlingInfo':
+//   Bit 1, 2: whether could castle kingsside/queensside before making this move (mask: myColourKingssideMask, myColourQueenssideMask)
+//   Bit 3, 4: whether OPPONENT could castle kingsside/queenside before making this move (mask: opponentsColourKingssideMask, opponentsColourQueensssideMask)
 type Move struct {
-	col                           colour.Colour  // colour of piece making the move
-	pieceType                     piece.Piece    // piece making the move
-	from, to                      square.Square  // from and to squares
-	castle                        string         // set if castles ("K"==kingsside, "Q"==queensside)
-	couldCastleBeforeMove         []bool         // set to true during posn.MakeMove/UnmakeMove, if could castle before making this move. Indexed on kingsside/queensside
-	opponentCouldCastleBeforeMove int32          // stores if could castle before making this move. Indexed on kingsside/queensside (set to true during posn.MakeMove/UnmakeMove)
-	promotedPiece                 *piece.Piece   // set if promotion
-	capturedPiece                 *piece.Piece   // set if capture
-	enpassantPawnRealLocation     *bitset.BitSet // set if e.p., contains the 'real' square where the pawn was, e.g. move.To()==E6, enpassantPawnRealLocation==E5
-	enpassantSquare               *square.Square // set to the enpassant square if this move is a pawn move from rank2 to rank4
+	col                       colour.Colour  // colour of piece making the move
+	pieceType                 piece.Piece    // piece making the move
+	from, to                  square.Square  // from and to squares
+	castle                    int32          // set if castles (mask: myColourKingssideMask, myColourQueenssideMask)
+	castlingInfo              int32          // stores if we or opponent could castle before making this move. See description above (set during posn.MakeMove)
+	promotedPiece             *piece.Piece   // set if promotion
+	capturedPiece             *piece.Piece   // set if capture
+	enpassantPawnRealLocation *bitset.BitSet // set if e.p., contains the 'real' square where the pawn was, e.g. move.To()==E6, enpassantPawnRealLocation==E5
+	enpassantSquare           *square.Square // set to the enpassant square if this move is a pawn move from rank2 to rank4
 }
 
 // New creates a new non-capture move
@@ -39,8 +45,6 @@ func New(col colour.Colour, from, to square.Square, pieceType piece.Piece) Move 
 			m.enpassantSquare = &sq
 		}
 	}
-	// these are the only fields of Move which can optionally be set later (during Position.MakeMove, UnmakeMove)
-	m.couldCastleBeforeMove = make([]bool, 2)
 	return m
 }
 
@@ -87,7 +91,7 @@ func CastleKingsSide(col colour.Colour) Move {
 	} else {
 		m = New(col, square.E8, square.G8, piece.KING)
 	}
-	m.castle = "K"
+	m.castle |= myColourKingssideMask
 	return m
 }
 
@@ -99,7 +103,7 @@ func CastleQueensSide(col colour.Colour) Move {
 	} else {
 		m = New(col, square.E8, square.C8, piece.KING)
 	}
-	m.castle = "Q"
+	m.castle |= myColourQueenssideMask
 	return m
 }
 
@@ -107,13 +111,17 @@ func CastleQueensSide(col colour.Colour) Move {
 func (m Move) IsKingsMove() bool { return m.pieceType == piece.KING }
 
 // IsCastles returns true if this move was "castles"
-func (m Move) IsCastles() bool { return m.castle != "" }
+func (m Move) IsCastles() bool { return m.castle != 0 }
 
 // IsKingsSideCastles returns true if this move was kings-side "castles"
-func (m Move) IsKingsSideCastles() bool { return m.castle == "K" }
+func (m Move) IsKingsSideCastles() bool {
+	return m.castle&myColourKingssideMask == myColourKingssideMask
+}
 
 // IsQueensSideCastles returns true if this move was queens-side "castles"
-func (m Move) IsQueensSideCastles() bool { return m.castle == "Q" }
+func (m Move) IsQueensSideCastles() bool {
+	return m.castle&myColourQueenssideMask == myColourQueenssideMask
+}
 
 // IsCapture returns true if this move was a capture
 func (m Move) IsCapture() bool { return m.capturedPiece != nil }
@@ -154,34 +162,34 @@ func (m Move) PieceType() piece.Piece { return m.pieceType }
 // CouldCastleBeforeMove returns true if it was possible to castle before this move
 func (m Move) CouldCastleBeforeMove(kingsside bool) bool {
 	if kingsside {
-		return m.couldCastleBeforeMove[0]
+		return m.castlingInfo&myColourKingssideMask == myColourKingssideMask
 	}
-	return m.couldCastleBeforeMove[1]
+	return m.castlingInfo&myColourQueenssideMask == myColourQueenssideMask
 }
 
 // SetCastleBeforeMove sets the flag indicating whether it was possible to castle before this move
 func (m *Move) SetCastleBeforeMove(kingsside bool) {
 	if kingsside {
-		m.couldCastleBeforeMove[0] = true
+		m.castlingInfo |= myColourKingssideMask
 	} else {
-		m.couldCastleBeforeMove[1] = true
+		m.castlingInfo |= myColourQueenssideMask
 	}
 }
 
 // OpponentCouldCastleBeforeMove returns true if it was possible FOR THE OTHER SIDE to castle before this move
 func (m Move) OpponentCouldCastleBeforeMove(kingsside bool) bool {
 	if kingsside {
-		return m.opponentCouldCastleBeforeMove&kingssideMask == kingssideMask
+		return m.castlingInfo&opponentsColourKingssideMask == opponentsColourKingssideMask
 	}
-	return m.opponentCouldCastleBeforeMove&queenssideMask == queenssideMask
+	return m.castlingInfo&opponentsColourQueenssideMask == opponentsColourQueenssideMask
 }
 
 // SetOpponentCastleBeforeMove sets the flag indicating whether it was possible FOR THE OTHER SIDE to castle before this move
 func (m *Move) SetOpponentCastleBeforeMove(kingsside bool) {
 	if kingsside {
-		m.opponentCouldCastleBeforeMove |= kingssideMask
+		m.castlingInfo |= opponentsColourKingssideMask
 	} else {
-		m.opponentCouldCastleBeforeMove |= queenssideMask
+		m.castlingInfo |= opponentsColourQueenssideMask
 	}
 }
 
