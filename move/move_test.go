@@ -1,12 +1,63 @@
 package move
 
 import (
+	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/rjo67/chess/bitset"
+	"github.com/rjo67/chess/piece"
+	"github.com/rjo67/chess/piece/colour"
 	"github.com/rjo67/chess/ray"
 	"github.com/rjo67/chess/square"
 )
+
+func TestSize(t *testing.T) {
+	m := New(colour.White, square.A5, square.B7, piece.KNIGHT)
+	fmt.Printf("size of move: %d bytes\n", reflect.TypeOf(m).Size())
+}
+
+func TestCastlingBits(t *testing.T) {
+	m := New(colour.White, square.A5, square.B7, piece.KNIGHT)
+	if m.CouldCastleBeforeMove(true) {
+		t.Fatalf("castling not possible")
+	}
+	m.SetCastleBeforeMove(true)
+	if !m.CouldCastleBeforeMove(true) {
+		t.Fatalf("castling should be possible")
+	}
+	if m.CouldCastleBeforeMove(false) {
+		t.Fatalf("castling not possible")
+	}
+	m.SetCastleBeforeMove(false)
+	if !m.CouldCastleBeforeMove(false) {
+		t.Fatalf("castling should be possible")
+	}
+
+	// opponent info
+
+	if m.OpponentCouldCastleBeforeMove(true) {
+		t.Fatalf("opponent castling not possible")
+	}
+	if m.OpponentCouldCastleBeforeMove(false) {
+		t.Fatalf("opponent castling not possible")
+	}
+
+	m.SetOpponentCastleBeforeMove(true)
+	if !m.OpponentCouldCastleBeforeMove(true) {
+		t.Fatalf("opponent castling should be possible")
+	}
+	if m.OpponentCouldCastleBeforeMove(false) {
+		t.Fatalf("opponent castling not possible")
+	}
+	m.SetOpponentCastleBeforeMove(false)
+	if !m.OpponentCouldCastleBeforeMove(true) {
+		t.Fatalf("opponent castling should be possible")
+	}
+	if !m.OpponentCouldCastleBeforeMove(false) {
+		t.Fatalf("opponent castling should be possible")
+	}
+}
 
 func TestSearch(t *testing.T) {
 	occupiedSquares := bitset.NewFromByteArray([8]byte{0x00, 0x00, 0x40, 0x00, 0x20, 0x80, 0x02, 0x10})

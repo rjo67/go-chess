@@ -10,6 +10,9 @@ import (
 	"github.com/rjo67/chess/square"
 )
 
+var kingssideMask int32 = 0x1
+var queenssideMask = kingssideMask << 1
+
 // Move stores information about a move
 type Move struct {
 	col                           colour.Colour  // colour of piece making the move
@@ -17,7 +20,7 @@ type Move struct {
 	from, to                      square.Square  // from and to squares
 	castle                        string         // set if castles ("K"==kingsside, "Q"==queensside)
 	couldCastleBeforeMove         []bool         // set to true during posn.MakeMove/UnmakeMove, if could castle before making this move. Indexed on kingsside/queensside
-	opponentCouldCastleBeforeMove []bool         // set to true during posn.MakeMove/UnmakeMove, if could castle before making this move. Indexed on kingsside/queensside
+	opponentCouldCastleBeforeMove int32          // stores if could castle before making this move. Indexed on kingsside/queensside (set to true during posn.MakeMove/UnmakeMove)
 	promotedPiece                 *piece.Piece   // set if promotion
 	capturedPiece                 *piece.Piece   // set if capture
 	enpassantPawnRealLocation     *bitset.BitSet // set if e.p., contains the 'real' square where the pawn was, e.g. move.To()==E6, enpassantPawnRealLocation==E5
@@ -38,7 +41,6 @@ func New(col colour.Colour, from, to square.Square, pieceType piece.Piece) Move 
 	}
 	// these are the only fields of Move which can optionally be set later (during Position.MakeMove, UnmakeMove)
 	m.couldCastleBeforeMove = make([]bool, 2)
-	m.opponentCouldCastleBeforeMove = make([]bool, 2)
 	return m
 }
 
@@ -158,7 +160,7 @@ func (m Move) CouldCastleBeforeMove(kingsside bool) bool {
 }
 
 // SetCastleBeforeMove sets the flag indicating whether it was possible to castle before this move
-func (m Move) SetCastleBeforeMove(kingsside bool) {
+func (m *Move) SetCastleBeforeMove(kingsside bool) {
 	if kingsside {
 		m.couldCastleBeforeMove[0] = true
 	} else {
@@ -169,17 +171,17 @@ func (m Move) SetCastleBeforeMove(kingsside bool) {
 // OpponentCouldCastleBeforeMove returns true if it was possible FOR THE OTHER SIDE to castle before this move
 func (m Move) OpponentCouldCastleBeforeMove(kingsside bool) bool {
 	if kingsside {
-		return m.opponentCouldCastleBeforeMove[0]
+		return m.opponentCouldCastleBeforeMove&kingssideMask == kingssideMask
 	}
-	return m.opponentCouldCastleBeforeMove[1]
+	return m.opponentCouldCastleBeforeMove&queenssideMask == queenssideMask
 }
 
 // SetOpponentCastleBeforeMove sets the flag indicating whether it was possible FOR THE OTHER SIDE to castle before this move
-func (m Move) SetOpponentCastleBeforeMove(kingsside bool) {
+func (m *Move) SetOpponentCastleBeforeMove(kingsside bool) {
 	if kingsside {
-		m.opponentCouldCastleBeforeMove[0] = true
+		m.opponentCouldCastleBeforeMove |= kingssideMask
 	} else {
-		m.opponentCouldCastleBeforeMove[1] = true
+		m.opponentCouldCastleBeforeMove |= queenssideMask
 	}
 }
 

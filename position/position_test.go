@@ -39,7 +39,7 @@ func TestMakeMoveNonCapture(t *testing.T) {
 	}
 
 	m := move.New(colour.White, square.B5, square.F1, piece.QUEEN)
-	posn.MakeMove(m)
+	posn.MakeMove(&m)
 
 	// check after-effects of MakeMove
 	if !posn.pieces[colour.White][piece.QUEEN].And(queenBitset).IsEmpty() {
@@ -101,7 +101,7 @@ func TestMakePromotionNonCapture(t *testing.T) {
 	}
 
 	m := move.NewPromotion(colour.White, square.E7, square.E8, piece.QUEEN)
-	posn.MakeMove(m)
+	posn.MakeMove(&m)
 
 	promotedQueenBitset := bitset.NewFromSquares(square.E8)
 	// check after-effects of MakeMove
@@ -176,7 +176,7 @@ func TestMakeMoveCapture(t *testing.T) {
 	}
 
 	m := move.NewCapture(colour.White, square.D4, square.D3, piece.ROOK, piece.PAWN)
-	posn.MakeMove(m)
+	posn.MakeMove(&m)
 
 	// check after-effects of MakeMove
 	if !posn.pieces[colour.White][piece.ROOK].And(rookBitset).IsEmpty() {
@@ -248,7 +248,7 @@ func TestEnpassantCapture(t *testing.T) {
 	if m.EnpassantSquare() != square.A6 {
 		t.Fatalf("enpassant square should be A6 but was: %s", m.EnpassantSquare().String())
 	}
-	posn.MakeMove(m)
+	posn.MakeMove(&m)
 
 	blackPawnBitsetBeforeMove := bitset.NewFromSquares(square.A7)
 	blackPawnBitsetAfterMove := bitset.NewFromSquares(square.A5)
@@ -286,12 +286,12 @@ func TestEnpassantCapture(t *testing.T) {
 	}
 
 	// redo the first (black) move
-	posn.MakeMove(m)
+	posn.MakeMove(&m)
 
 	// second: white takes enpassant
 	m = move.NewEpCapture(colour.White, square.B5, square.A6)
 
-	posn.MakeMove(m)
+	posn.MakeMove(&m)
 
 	bothBlackPawnSquares := blackPawnBitsetBeforeMove.Or(blackPawnBitsetAfterMove)
 	if !posn.pieces[colour.Black][piece.PAWN].And(bothBlackPawnSquares).IsEmpty() {
@@ -345,6 +345,49 @@ func TestEnpassantCapture(t *testing.T) {
 	}
 }
 
+func TestCastling(t *testing.T) {
+	posn, err := ParseFen("r3k2r/p1ppqpb1/bN2pnN1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 0")
+	if err != nil {
+		t.Fatalf("error parsing fen: %s", err)
+	}
+	m := move.New(colour.White, square.D2, square.D3, piece.BISHOP)
+	posn.MakeMove(&m)
+	// castling flags should still be false for this move, since no castling-relevant move was made
+	if m.OpponentCouldCastleBeforeMove(true) || m.OpponentCouldCastleBeforeMove(false) {
+		t.Fatalf("castling flags wrong")
+	}
+	posn.UnmakeMove(m)
+	if m.OpponentCouldCastleBeforeMove(true) || m.OpponentCouldCastleBeforeMove(false) {
+		t.Fatalf("castling flags wrong")
+	}
+	m = move.New(colour.White, square.B6, square.A8, piece.KNIGHT)
+	posn.MakeMove(&m)
+	// queensside castling flag should be set for this move
+	if m.OpponentCouldCastleBeforeMove(true) || !m.OpponentCouldCastleBeforeMove(false) {
+		t.Fatalf("castling flags wrong")
+	}
+	if posn.CastlingAvailability(colour.Black, false) {
+		t.Fatalf("castling flags wrong")
+	}
+	posn.UnmakeMove(m)
+	if !posn.CastlingAvailability(colour.Black, false) {
+		t.Fatalf("castling flags wrong")
+	}
+	m = move.New(colour.White, square.G6, square.H8, piece.KNIGHT)
+	posn.MakeMove(&m)
+	// kingssside castling flag should be set for this move
+	if !m.OpponentCouldCastleBeforeMove(true) || m.OpponentCouldCastleBeforeMove(false) {
+		t.Fatalf("castling flags wrong")
+	}
+	if posn.CastlingAvailability(colour.Black, true) {
+		t.Fatalf("castling flags wrong")
+	}
+	posn.UnmakeMove(m)
+	if !posn.CastlingAvailability(colour.Black, true) {
+		t.Fatalf("castling flags wrong")
+	}
+}
+
 func TestMakePromotionCapture(t *testing.T) {
 	posn, err := ParseFen("2K2r2/4P3/8/8/8/8/8/3k4 w - - 0 1")
 	if err != nil {
@@ -363,7 +406,7 @@ func TestMakePromotionCapture(t *testing.T) {
 	}
 
 	m := move.NewPromotionCapture(colour.White, square.E7, square.F8, piece.QUEEN, piece.ROOK)
-	posn.MakeMove(m)
+	posn.MakeMove(&m)
 
 	// check after-effects of MakeMove
 	promotedQueenBitset := bitset.NewFromSquares(square.F8)
@@ -636,14 +679,14 @@ func perft(posn Position, depth int) map[string]int {
 	moveMap := make(map[string]int, 0)
 	// fill move map with starting moves
 	for _, startMove := range posn.FindMoves(posn.activeColour) {
-		posn.MakeMove(startMove)
+		posn.MakeMove(&startMove)
 		moveMap[startMove.String()] = len(p2(startMove, posn, depth)) // just store the number of moves, to allow GC of the moves
 		posn.UnmakeMove(startMove)
 	}
 	return moveMap
 }
 
-// processes one half-move level.
+// processes one half-move level
 func p2(origMove move.Move, posn Position, depth int) []move.Move {
 	if depth == 1 {
 		// at a leaf node, return an array of one element, in order to count the leaf-moves
@@ -651,7 +694,7 @@ func p2(origMove move.Move, posn Position, depth int) []move.Move {
 	}
 	movesAtNextDepth := make([]move.Move, 0, 300)
 	for _, m := range posn.FindMoves(posn.activeColour) {
-		posn.MakeMove(m)
+		posn.MakeMove(&m)
 		movesAtNextDepth = append(movesAtNextDepth, p2(m, posn, depth-1)...)
 		posn.UnmakeMove(m)
 	}

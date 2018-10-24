@@ -56,7 +56,7 @@ func (p Position) FindMoves(col colour.Colour) []move.Move {
 					valid = false
 				} else {
 					// is king moving into check..?
-					p.MakeMove(move)
+					p.MakeMove(&move)
 					if p.AnyPieceAttacksSquare(otherColour, move.To()) {
 						valid = false
 					}
@@ -64,7 +64,7 @@ func (p Position) FindMoves(col colour.Colour) []move.Move {
 				}
 			} else {
 				// for other moves: is king now in check
-				p.MakeMove(move)
+				p.MakeMove(&move)
 				if p.AnyPieceAttacksSquare(otherColour, myKing) {
 					valid = false
 				}

@@ -51,7 +51,8 @@ func NewPosition(whitePieces, blackPieces map[piece.Piece]bitset.BitSet) Positio
 }
 
 // MakeMove updates the position with the given move
-func (p *Position) MakeMove(m move.Move) {
+// NB: the move will store the new castling rights if necessary, therefore takes a pointer object
+func (p *Position) MakeMove(m *move.Move) {
 	myColour := m.Colour()
 	otherColour := m.Colour().Other()
 	if m.IsCastles() {
@@ -160,6 +161,7 @@ func (p *Position) MakeMove(m move.Move) {
 }
 
 // UnmakeMove updates the position with the reverse of the given move
+// (does not need to update the move, therefore not a pointer)
 func (p *Position) UnmakeMove(m move.Move) {
 	myColour := m.Colour()
 	otherColour := m.Colour().Other()
