@@ -12,14 +12,16 @@ import (
 
 // Move stores information about a move
 type Move struct {
-	col                       colour.Colour  // colour of piece making the move
-	pieceType                 piece.Piece    // piece making the move
-	from, to                  square.Square  // from and to squares
-	castle                    string         // set if castles ("K"==kingsside, "Q"==queensside)
-	promotedPiece             *piece.Piece   // set if promotion
-	capturedPiece             *piece.Piece   // set if capture
-	enpassantPawnRealLocation *bitset.BitSet // set if e.p., contains the 'real' square where the pawn was, e.g. move.To()==E6, enpassantPawnRealLocation==E5
-	enpassantSquare           *square.Square // set to the enpassant square if this move is a pawn move from rank2 to rank4
+	col                           colour.Colour  // colour of piece making the move
+	pieceType                     piece.Piece    // piece making the move
+	from, to                      square.Square  // from and to squares
+	castle                        string         // set if castles ("K"==kingsside, "Q"==queensside)
+	couldCastleBeforeMove         []bool         // set to true during posn.MakeMove/UnmakeMove, if could castle before making this move. Indexed on kingsside/queensside
+	opponentCouldCastleBeforeMove []bool         // set to true during posn.MakeMove/UnmakeMove, if could castle before making this move. Indexed on kingsside/queensside
+	promotedPiece                 *piece.Piece   // set if promotion
+	capturedPiece                 *piece.Piece   // set if capture
+	enpassantPawnRealLocation     *bitset.BitSet // set if e.p., contains the 'real' square where the pawn was, e.g. move.To()==E6, enpassantPawnRealLocation==E5
+	enpassantSquare               *square.Square // set to the enpassant square if this move is a pawn move from rank2 to rank4
 }
 
 // New creates a new non-capture move
@@ -34,12 +36,17 @@ func New(col colour.Colour, from, to square.Square, pieceType piece.Piece) Move 
 			m.enpassantSquare = &sq
 		}
 	}
+	// these are the only fields of Move which can optionally be set later (during Position.MakeMove, UnmakeMove)
+	m.couldCastleBeforeMove = make([]bool, 2)
+	m.opponentCouldCastleBeforeMove = make([]bool, 2)
 	return m
 }
 
 // NewCapture creates a new capture move
 func NewCapture(col colour.Colour, from, to square.Square, pieceType piece.Piece, capturedPieceType piece.Piece) Move {
-	return Move{col: col, from: from, to: to, pieceType: pieceType, capturedPiece: &capturedPieceType}
+	m := New(col, from, to, pieceType)
+	m.capturedPiece = &capturedPieceType
+	return m
 }
 
 // NewEpCapture creates a new enpassant capture move
@@ -51,34 +58,47 @@ func NewEpCapture(col colour.Colour, from, to square.Square) Move {
 		shift = 8
 	}
 	enpassantPawnRealLocation := bitset.NewFromSquares(square.Square(int(to) + shift))
-	pi := piece.PAWN
-	return Move{col: col, from: from, to: to, pieceType: piece.PAWN, capturedPiece: &pi, enpassantPawnRealLocation: &enpassantPawnRealLocation}
+	m := NewCapture(col, from, to, piece.PAWN, piece.PAWN)
+	m.enpassantPawnRealLocation = &enpassantPawnRealLocation
+	return m
 }
 
 // NewPromotion creates a new promotion move
 func NewPromotion(col colour.Colour, from, to square.Square, toPiece piece.Piece) Move {
-	return Move{col: col, from: from, to: to, pieceType: piece.PAWN, promotedPiece: &toPiece}
+	m := New(col, from, to, piece.PAWN)
+	m.promotedPiece = &toPiece
+	return m
 }
 
 // NewPromotionCapture creates a new promotion move with capture
 func NewPromotionCapture(col colour.Colour, from, to square.Square, toPiece piece.Piece, capturedPieceType piece.Piece) Move {
-	return Move{col: col, from: from, to: to, pieceType: piece.PAWN, promotedPiece: &toPiece, capturedPiece: &capturedPieceType}
+	m := NewCapture(col, from, to, piece.PAWN, capturedPieceType)
+	m.promotedPiece = &toPiece
+	return m
 }
 
 // CastleKingsSide creates O-O
 func CastleKingsSide(col colour.Colour) Move {
+	var m Move
 	if col == colour.White {
-		return Move{col: col, from: square.E1, to: square.G1, castle: "K", pieceType: piece.KING}
+		m = New(col, square.E1, square.G1, piece.KING)
+	} else {
+		m = New(col, square.E8, square.G8, piece.KING)
 	}
-	return Move{col: col, from: square.E8, to: square.G8, castle: "K", pieceType: piece.KING}
+	m.castle = "K"
+	return m
 }
 
 // CastleQueensSide creates O-O-O
 func CastleQueensSide(col colour.Colour) Move {
+	var m Move
 	if col == colour.White {
-		return Move{col: col, from: square.E1, to: square.C1, castle: "Q", pieceType: piece.KING}
+		m = New(col, square.E1, square.C1, piece.KING)
+	} else {
+		m = New(col, square.E8, square.C8, piece.KING)
 	}
-	return Move{col: col, from: square.E8, to: square.C8, castle: "Q", pieceType: piece.KING}
+	m.castle = "Q"
+	return m
 }
 
 // IsKingsMove returns true if this move involves the king (castling excluded)
@@ -128,6 +148,40 @@ func (m Move) Colour() colour.Colour { return m.col }
 
 // PieceType returns the move's piece
 func (m Move) PieceType() piece.Piece { return m.pieceType }
+
+// CouldCastleBeforeMove returns true if it was possible to castle before this move
+func (m Move) CouldCastleBeforeMove(kingsside bool) bool {
+	if kingsside {
+		return m.couldCastleBeforeMove[0]
+	}
+	return m.couldCastleBeforeMove[1]
+}
+
+// SetCastleBeforeMove sets the flag indicating whether it was possible to castle before this move
+func (m Move) SetCastleBeforeMove(kingsside bool) {
+	if kingsside {
+		m.couldCastleBeforeMove[0] = true
+	} else {
+		m.couldCastleBeforeMove[1] = true
+	}
+}
+
+// OpponentCouldCastleBeforeMove returns true if it was possible FOR THE OTHER SIDE to castle before this move
+func (m Move) OpponentCouldCastleBeforeMove(kingsside bool) bool {
+	if kingsside {
+		return m.opponentCouldCastleBeforeMove[0]
+	}
+	return m.opponentCouldCastleBeforeMove[1]
+}
+
+// SetOpponentCastleBeforeMove sets the flag indicating whether it was possible FOR THE OTHER SIDE to castle before this move
+func (m Move) SetOpponentCastleBeforeMove(kingsside bool) {
+	if kingsside {
+		m.opponentCouldCastleBeforeMove[0] = true
+	} else {
+		m.opponentCouldCastleBeforeMove[1] = true
+	}
+}
 
 func (m Move) String() string {
 	if m.IsKingsSideCastles() {

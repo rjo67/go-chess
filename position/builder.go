@@ -89,9 +89,7 @@ func (b *Builder) Build() Position {
 	posn.activeColour = b.activeColour
 	for _, col := range colour.AllColours {
 		posn.setCastlingAvailability(col, true, b.castlingAvailabilityKingsSide[col])
-		posn.previousCastlingAvailabilityKingsSide[col] = posn.castlingAvailabilityKingsSide[col]
 		posn.setCastlingAvailability(col, false, b.castlingAvailabilityQueensSide[col])
-		posn.previousCastlingAvailabilityQueensSide[col] = posn.castlingAvailabilityQueensSide[col]
 	}
 
 	return posn

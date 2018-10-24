@@ -14,18 +14,16 @@ import (
 
 // Position represents a chess position
 type Position struct {
-	pieces                                 []map[piece.Piece]bitset.BitSet // array of map of piece bitsets, array-dim = colour
-	allPieces                              []bitset.BitSet                 // all pieces of a particular colour
-	occupiedSquares                        bitset.BitSet                   // all occupied squares
-	activeColour                           colour.Colour                   // whose move
-	castlingAvailabilityKingsSide          []bool                          // whether white/black can castle kingsside
-	castlingAvailabilityQueensSide         []bool                          // whether white/black can castle queensside
-	previousCastlingAvailabilityKingsSide  []bool                          // whether prior to current move, white/black could castle kingsside (for unMakeMove)
-	previousCastlingAvailabilityQueensSide []bool                          // whether prior to current move, white/black could castle queensside (for unMakeMove)
-	enpassantSquare                        *square.Square                  // enpassant square of current move
-	previousEnpassantSquare                *square.Square                  // enpassant square if any in previous move
-	halfmoveClock                          int
-	fullmoveNbr                            int
+	pieces                         []map[piece.Piece]bitset.BitSet // array of map of piece bitsets, array-dim = colour
+	allPieces                      []bitset.BitSet                 // all pieces of a particular colour
+	occupiedSquares                bitset.BitSet                   // all occupied squares
+	activeColour                   colour.Colour                   // whose move
+	castlingAvailabilityKingsSide  []bool                          // whether white/black can castle kingsside
+	castlingAvailabilityQueensSide []bool                          // whether white/black can castle queensside
+	enpassantSquare                *square.Square                  // enpassant square of current move
+	previousEnpassantSquare        *square.Square                  // enpassant square if any in previous move
+	halfmoveClock                  int
+	fullmoveNbr                    int
 }
 
 // NewPosition creates a new position
@@ -36,8 +34,6 @@ func NewPosition(whitePieces, blackPieces map[piece.Piece]bitset.BitSet) Positio
 	p.allPieces = make([]bitset.BitSet, 2)
 	p.castlingAvailabilityKingsSide = make([]bool, 2)
 	p.castlingAvailabilityQueensSide = make([]bool, 2)
-	p.previousCastlingAvailabilityKingsSide = make([]bool, 2)
-	p.previousCastlingAvailabilityQueensSide = make([]bool, 2)
 
 	p.pieces[colour.White] = whitePieces
 	p.pieces[colour.Black] = blackPieces
@@ -118,14 +114,14 @@ func (p *Position) MakeMove(m move.Move) {
 		} else {
 			p.occupiedSquares = p.occupiedSquares.Xor(bs)
 		}
-		// remove castling rights on king move  (only set "previous" if changing state)
+		// remove castling rights on king move
 		if m.IsKingsMove() {
 			if p.castlingAvailabilityKingsSide[m.Colour()] {
-				p.previousCastlingAvailabilityKingsSide[m.Colour()] = p.castlingAvailabilityKingsSide[m.Colour()]
+				m.SetCastleBeforeMove(true)
 				p.castlingAvailabilityKingsSide[m.Colour()] = false
 			}
 			if p.castlingAvailabilityQueensSide[m.Colour()] {
-				p.previousCastlingAvailabilityQueensSide[m.Colour()] = p.castlingAvailabilityQueensSide[m.Colour()]
+				m.SetCastleBeforeMove(false)
 				p.castlingAvailabilityQueensSide[m.Colour()] = false
 			}
 		} else if m.PieceType() == piece.ROOK {
@@ -133,13 +129,13 @@ func (p *Position) MakeMove(m move.Move) {
 			if (m.Colour() == colour.White && m.From() == square.A1) ||
 				(m.Colour() == colour.Black && m.From() == square.A8) {
 				if p.castlingAvailabilityQueensSide[m.Colour()] {
-					p.previousCastlingAvailabilityQueensSide[m.Colour()] = p.castlingAvailabilityQueensSide[m.Colour()]
+					m.SetCastleBeforeMove(false)
 					p.castlingAvailabilityQueensSide[m.Colour()] = false
 				}
 			} else if (m.Colour() == colour.White && m.From() == square.H1) ||
 				(m.Colour() == colour.Black && m.From() == square.H8) {
 				if p.castlingAvailabilityKingsSide[m.Colour()] {
-					p.previousCastlingAvailabilityKingsSide[m.Colour()] = p.castlingAvailabilityKingsSide[m.Colour()]
+					m.SetCastleBeforeMove(true)
 					p.castlingAvailabilityKingsSide[m.Colour()] = false
 				}
 			}
@@ -148,13 +144,13 @@ func (p *Position) MakeMove(m move.Move) {
 		if (m.Colour() == colour.Black && m.To() == square.A1) ||
 			(m.Colour() == colour.White && m.To() == square.A8) {
 			if p.castlingAvailabilityQueensSide[otherColour] {
-				p.previousCastlingAvailabilityQueensSide[otherColour] = p.castlingAvailabilityQueensSide[otherColour]
+				m.SetOpponentCastleBeforeMove(false)
 				p.castlingAvailabilityQueensSide[otherColour] = false
 			}
 		} else if (m.Colour() == colour.Black && m.To() == square.H1) ||
 			(m.Colour() == colour.White && m.To() == square.H8) {
 			if p.castlingAvailabilityKingsSide[otherColour] {
-				p.previousCastlingAvailabilityKingsSide[otherColour] = p.castlingAvailabilityKingsSide[otherColour]
+				m.SetOpponentCastleBeforeMove(true)
 				p.castlingAvailabilityKingsSide[otherColour] = false
 			}
 		}
@@ -237,23 +233,23 @@ func (p *Position) UnmakeMove(m move.Move) {
 		}
 		// restore castling rights on king or rook move
 		if m.IsKingsMove() {
-			if !p.castlingAvailabilityKingsSide[m.Colour()] {
-				p.castlingAvailabilityKingsSide[m.Colour()] = p.previousCastlingAvailabilityKingsSide[m.Colour()]
+			if m.CouldCastleBeforeMove(true) {
+				p.castlingAvailabilityKingsSide[m.Colour()] = true
 			}
-			if !p.castlingAvailabilityQueensSide[m.Colour()] {
-				p.castlingAvailabilityQueensSide[m.Colour()] = p.previousCastlingAvailabilityQueensSide[m.Colour()]
+			if m.CouldCastleBeforeMove(false) {
+				p.castlingAvailabilityQueensSide[m.Colour()] = true
 			}
 		} else if m.PieceType() == piece.ROOK {
 			// restore castling rights on rook move
 			if (m.Colour() == colour.White && m.From() == square.A1) ||
 				(m.Colour() == colour.Black && m.From() == square.A8) {
-				if !p.castlingAvailabilityQueensSide[m.Colour()] {
-					p.castlingAvailabilityQueensSide[m.Colour()] = p.previousCastlingAvailabilityQueensSide[m.Colour()]
+				if m.CouldCastleBeforeMove(false) {
+					p.castlingAvailabilityQueensSide[m.Colour()] = true
 				}
 			} else if (m.Colour() == colour.White && m.From() == square.H1) ||
 				(m.Colour() == colour.Black && m.From() == square.H8) {
-				if !p.castlingAvailabilityKingsSide[m.Colour()] {
-					p.castlingAvailabilityKingsSide[m.Colour()] = p.previousCastlingAvailabilityKingsSide[m.Colour()]
+				if m.CouldCastleBeforeMove(true) {
+					p.castlingAvailabilityKingsSide[m.Colour()] = true
 				}
 			}
 		}
@@ -261,13 +257,13 @@ func (p *Position) UnmakeMove(m move.Move) {
 		// restore castling rights FOR OTHER SIDE if necessary
 		if (m.Colour() == colour.Black && m.To() == square.A1) ||
 			(m.Colour() == colour.White && m.To() == square.A8) {
-			if !p.castlingAvailabilityQueensSide[otherColour] {
-				p.castlingAvailabilityQueensSide[otherColour] = p.previousCastlingAvailabilityQueensSide[otherColour]
+			if m.OpponentCouldCastleBeforeMove(false) {
+				p.castlingAvailabilityQueensSide[otherColour] = true
 			}
 		} else if (m.Colour() == colour.Black && m.To() == square.H1) ||
 			(m.Colour() == colour.White && m.To() == square.H8) {
-			if !p.castlingAvailabilityKingsSide[otherColour] {
-				p.castlingAvailabilityKingsSide[otherColour] = p.previousCastlingAvailabilityKingsSide[otherColour]
+			if m.OpponentCouldCastleBeforeMove(true) {
+				p.castlingAvailabilityKingsSide[otherColour] = true
 			}
 		}
 	}
