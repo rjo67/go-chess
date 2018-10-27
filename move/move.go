@@ -18,11 +18,10 @@ var opponentsColourQueenssideMask = opponentsColourKingssideMask << 1
 
 // Move stores information about a move
 //
-// Castling info is stored in an int 'castlingInfo':
+// Castling info is stored in the int 'castlingInfo':
 //   Bit 1, 2: whether could castle kingsside/queensside before making this move (mask: myColourKingssideMask, myColourQueenssideMask)
 //   Bit 3, 4: whether OPPONENT could castle kingsside/queenside before making this move (mask: opponentsColourKingssideMask, opponentsColourQueensssideMask)
 type Move struct {
-	col                       colour.Colour  // colour of piece making the move
 	pieceType                 piece.Piece    // piece making the move
 	from, to                  square.Square  // from and to squares
 	castle                    int32          // set if castles (mask: myColourKingssideMask, myColourQueenssideMask)
@@ -35,7 +34,7 @@ type Move struct {
 
 // New creates a new non-capture move
 func New(col colour.Colour, from, to square.Square, pieceType piece.Piece) Move {
-	m := Move{col: col, from: from, to: to, pieceType: pieceType}
+	m := Move{from: from, to: to, pieceType: pieceType}
 	if pieceType == piece.PAWN {
 		if col == colour.White && from.Rank() == 2 && to.Rank() == 4 {
 			sq := square.Square(from + 8)
@@ -152,9 +151,6 @@ func (m Move) From() square.Square { return m.from }
 
 // To returns the move's target square
 func (m Move) To() square.Square { return m.to }
-
-// Colour returns the colour of the move
-func (m Move) Colour() colour.Colour { return m.col }
 
 // PieceType returns the move's piece
 func (m Move) PieceType() piece.Piece { return m.pieceType }

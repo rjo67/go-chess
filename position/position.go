@@ -56,8 +56,8 @@ func NewPosition(whitePieces, blackPieces map[piece.Piece]bitset.BitSet) Positio
 // MakeMove updates the position with the given move
 // NB: the move will store the new castling rights if necessary, therefore takes a pointer object
 func (p *Position) MakeMove(m *move.Move) {
-	myColour := m.Colour()
-	otherColour := m.Colour().Other()
+	myColour := p.activeColour
+	otherColour := myColour.Other()
 	if m.IsCastles() {
 		// move rook (the king's move will be taken care of later)
 		var rooksMove bitset.BitSet
@@ -166,8 +166,8 @@ func (p *Position) MakeMove(m *move.Move) {
 // UnmakeMove updates the position with the reverse of the given move
 // (does not need to update the move, therefore not a pointer)
 func (p *Position) UnmakeMove(m move.Move) {
-	myColour := m.Colour()
-	otherColour := m.Colour().Other()
+	myColour := p.activeColour.Other() // position has played the move 'm' which will have changed activeColor to the other side
+	otherColour := myColour.Other()
 	if m.IsCastles() {
 		// move rook back (the king's move will be taken care of later)
 		var rooksMove bitset.BitSet
