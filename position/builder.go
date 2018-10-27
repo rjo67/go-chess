@@ -88,8 +88,12 @@ func (b *Builder) Build() Position {
 	posn.fullmoveNbr = b.fullmoveNbr
 	posn.activeColour = b.activeColour
 	for _, col := range colour.AllColours {
-		posn.setCastlingAvailability(col, true, b.castlingAvailabilityKingsSide[col])
-		posn.setCastlingAvailability(col, false, b.castlingAvailabilityQueensSide[col])
+		if b.castlingAvailabilityKingsSide[col] {
+			posn.SetCastlingAvailabilityKingsSide(col)
+		}
+		if b.castlingAvailabilityQueensSide[col] {
+			posn.SetCastlingAvailabilityQueensSide(col)
+		}
 	}
 
 	return posn

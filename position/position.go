@@ -12,18 +12,23 @@ import (
 	"github.com/rjo67/chess/square"
 )
 
+// various masks to access bits in 'castlingAvailability'
+var whiteKingssideMask uint32 = 0x1
+var whiteQueenssideMask = whiteKingssideMask << 1
+var blackKingssideMask uint32 = 0x4
+var blackQueenssideMask = blackKingssideMask << 1
+
 // Position represents a chess position
 type Position struct {
-	pieces                         []map[piece.Piece]bitset.BitSet // array of map of piece bitsets, array-dim = colour
-	allPieces                      []bitset.BitSet                 // all pieces of a particular colour
-	occupiedSquares                bitset.BitSet                   // all occupied squares
-	activeColour                   colour.Colour                   // whose move
-	castlingAvailabilityKingsSide  []bool                          // whether white/black can castle kingsside
-	castlingAvailabilityQueensSide []bool                          // whether white/black can castle queensside
-	enpassantSquare                *square.Square                  // enpassant square of current move
-	previousEnpassantSquare        *square.Square                  // enpassant square if any in previous move
-	halfmoveClock                  int
-	fullmoveNbr                    int
+	pieces                  []map[piece.Piece]bitset.BitSet // array of map of piece bitsets, array-dim = colour
+	allPieces               []bitset.BitSet                 // all pieces of a particular colour
+	occupiedSquares         bitset.BitSet                   // all occupied squares
+	activeColour            colour.Colour                   // whose move
+	castlingAvailability    uint32                          // whether white/black can castle kingsside/queensside (see mask values above)
+	enpassantSquare         *square.Square                  // enpassant square of current move
+	previousEnpassantSquare *square.Square                  // enpassant square if any in previous move
+	halfmoveClock           int
+	fullmoveNbr             int
 }
 
 // NewPosition creates a new position
@@ -32,8 +37,6 @@ func NewPosition(whitePieces, blackPieces map[piece.Piece]bitset.BitSet) Positio
 	var p Position
 	p.pieces = make([]map[piece.Piece]bitset.BitSet, 2)
 	p.allPieces = make([]bitset.BitSet, 2)
-	p.castlingAvailabilityKingsSide = make([]bool, 2)
-	p.castlingAvailabilityQueensSide = make([]bool, 2)
 
 	p.pieces[colour.White] = whitePieces
 	p.pieces[colour.Black] = blackPieces
@@ -118,35 +121,35 @@ func (p *Position) MakeMove(m *move.Move) {
 		}
 		// remove castling rights on king move
 		if m.IsKingsMove() {
-			if p.castlingAvailabilityKingsSide[myColour] {
+			if p.CastlingAvailabilityKingsSide(myColour) {
 				m.SetCastleBeforeMove(true)
-				p.castlingAvailabilityKingsSide[myColour] = false
+				p.ToggleCastlingAvailabilityKingsSide(myColour)
 			}
-			if p.castlingAvailabilityQueensSide[myColour] {
+			if p.CastlingAvailabilityQueensSide(myColour) {
 				m.SetCastleBeforeMove(false)
-				p.castlingAvailabilityQueensSide[myColour] = false
+				p.ToggleCastlingAvailabilityQueensSide(myColour)
 			}
 		} else if m.PieceType() == piece.ROOK {
 			// remove castling rights on rook move
-			if p.castlingAvailabilityQueensSide[myColour] &&
+			if p.CastlingAvailabilityQueensSide(myColour) &&
 				((myColour == colour.White && m.From() == square.A1) || (myColour == colour.Black && m.From() == square.A8)) {
 				m.SetCastleBeforeMove(false)
-				p.castlingAvailabilityQueensSide[myColour] = false
-			} else if p.castlingAvailabilityKingsSide[myColour] &&
+				p.ToggleCastlingAvailabilityQueensSide(myColour)
+			} else if p.CastlingAvailabilityKingsSide(myColour) &&
 				((myColour == colour.White && m.From() == square.H1) || (myColour == colour.Black && m.From() == square.H8)) {
 				m.SetCastleBeforeMove(true)
-				p.castlingAvailabilityKingsSide[myColour] = false
+				p.ToggleCastlingAvailabilityKingsSide(myColour)
 			}
 		}
 		// remove castling rights FOR OTHER SIDE if necessary
-		if p.castlingAvailabilityQueensSide[otherColour] &&
+		if p.CastlingAvailabilityQueensSide(otherColour) &&
 			((myColour == colour.Black && m.To() == square.A1) || (myColour == colour.White && m.To() == square.A8)) {
 			m.SetOpponentCastleBeforeMove(false)
-			p.castlingAvailabilityQueensSide[otherColour] = false
-		} else if p.castlingAvailabilityKingsSide[otherColour] &&
+			p.ToggleCastlingAvailabilityQueensSide(otherColour)
+		} else if p.CastlingAvailabilityKingsSide(otherColour) &&
 			((myColour == colour.Black && m.To() == square.H1) || (myColour == colour.White && m.To() == square.H8)) {
 			m.SetOpponentCastleBeforeMove(true)
-			p.castlingAvailabilityKingsSide[otherColour] = false
+			p.ToggleCastlingAvailabilityKingsSide(otherColour)
 		}
 	}
 	p.activeColour = p.activeColour.Other()
@@ -230,29 +233,29 @@ func (p *Position) UnmakeMove(m move.Move) {
 		// restore castling rights on king or rook move
 		if m.IsKingsMove() {
 			if m.CouldCastleBeforeMove(true) {
-				p.castlingAvailabilityKingsSide[myColour] = true
+				p.SetCastlingAvailabilityKingsSide(myColour)
 			}
 			if m.CouldCastleBeforeMove(false) {
-				p.castlingAvailabilityQueensSide[myColour] = true
+				p.SetCastlingAvailabilityQueensSide(myColour)
 			}
 		} else if m.PieceType() == piece.ROOK {
 			// restore castling rights on rook move
 			if m.CouldCastleBeforeMove(false) &&
 				((myColour == colour.White && m.From() == square.A1) || (myColour == colour.Black && m.From() == square.A8)) {
-				p.castlingAvailabilityQueensSide[myColour] = true
+				p.SetCastlingAvailabilityQueensSide(myColour)
 			} else if m.CouldCastleBeforeMove(true) &&
 				((myColour == colour.White && m.From() == square.H1) || (myColour == colour.Black && m.From() == square.H8)) {
-				p.castlingAvailabilityKingsSide[myColour] = true
+				p.SetCastlingAvailabilityKingsSide(myColour)
 			}
 		}
 
 		// restore castling rights FOR OTHER SIDE if necessary
 		if m.OpponentCouldCastleBeforeMove(false) &&
 			((myColour == colour.Black && m.To() == square.A1) || (myColour == colour.White && m.To() == square.A8)) {
-			p.castlingAvailabilityQueensSide[otherColour] = true
+			p.SetCastlingAvailabilityQueensSide(otherColour)
 		} else if m.OpponentCouldCastleBeforeMove(true) &&
 			((myColour == colour.Black && m.To() == square.H1) || (myColour == colour.White && m.To() == square.H8)) {
-			p.castlingAvailabilityKingsSide[otherColour] = true
+			p.SetCastlingAvailabilityKingsSide(otherColour)
 		}
 	}
 
@@ -315,12 +318,56 @@ func (p Position) FullmoveNbr() int {
 	return p.fullmoveNbr
 }
 
-// CastlingAvailability returns the castling availabilty
-func (p Position) CastlingAvailability(col colour.Colour, kingsside bool) bool {
-	if kingsside {
-		return p.castlingAvailabilityKingsSide[col]
+// CastlingAvailabilityKingsSide returns the castling availabilty on the kingsside for the given colour
+func (p Position) CastlingAvailabilityKingsSide(col colour.Colour) bool {
+	if col == colour.White {
+		return p.castlingAvailability&whiteKingssideMask == whiteKingssideMask
 	}
-	return p.castlingAvailabilityQueensSide[col]
+	return p.castlingAvailability&blackKingssideMask == blackKingssideMask
+}
+
+// CastlingAvailabilityQueensSide returns the castling availabilty on the queensside for the given colour
+func (p Position) CastlingAvailabilityQueensSide(col colour.Colour) bool {
+	if col == colour.White {
+		return p.castlingAvailability&whiteQueenssideMask == whiteQueenssideMask
+	}
+	return p.castlingAvailability&blackQueenssideMask == blackQueenssideMask
+}
+
+// ToggleCastlingAvailabilityKingsSide toggles the castling availabilty on the kingsside for the given colour
+func (p *Position) ToggleCastlingAvailabilityKingsSide(col colour.Colour) {
+	if col == colour.White {
+		p.castlingAvailability ^= whiteKingssideMask
+	} else {
+		p.castlingAvailability ^= blackKingssideMask
+	}
+}
+
+// SetCastlingAvailabilityKingsSide sets the castling availabilty on the kingsside for the given colour
+func (p *Position) SetCastlingAvailabilityKingsSide(col colour.Colour) {
+	if col == colour.White {
+		p.castlingAvailability |= whiteKingssideMask
+	} else {
+		p.castlingAvailability |= blackKingssideMask
+	}
+}
+
+// ToggleCastlingAvailabilityQueensSide toggles the castling availabilty on the queensside for the given colour
+func (p *Position) ToggleCastlingAvailabilityQueensSide(col colour.Colour) {
+	if col == colour.White {
+		p.castlingAvailability ^= whiteQueenssideMask
+	} else {
+		p.castlingAvailability ^= blackQueenssideMask
+	}
+}
+
+// SetCastlingAvailabilityQueensSide sets the castling availabilty on the queensside for the given colour
+func (p *Position) SetCastlingAvailabilityQueensSide(col colour.Colour) {
+	if col == colour.White {
+		p.castlingAvailability |= whiteQueenssideMask
+	} else {
+		p.castlingAvailability |= blackQueenssideMask
+	}
 }
 
 // BitSetFor returns the bitset for the given piece and colour
@@ -391,12 +438,4 @@ func (p Position) String() string {
 	sb.WriteString("+--------+\n")
 
 	return sb.String()
-}
-
-// 'package private', only called by Builder
-func (p *Position) setCastlingAvailability(col colour.Colour, kingsside bool, canCastle bool) {
-	if kingsside {
-		p.castlingAvailabilityKingsSide[col] = canCastle
-	}
-	p.castlingAvailabilityQueensSide[col] = canCastle
 }

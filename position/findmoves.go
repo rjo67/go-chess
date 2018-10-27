@@ -250,10 +250,10 @@ func (p Position) findKingMoves(col colour.Colour) []move.Move {
 	}
 
 	// castling moves are added without checking for legality
-	if p.CastlingAvailability(col, true) {
+	if p.CastlingAvailabilityKingsSide(col) {
 		moves = append(moves, move.CastleKingsSide(col))
 	}
-	if p.CastlingAvailability(col, false) {
+	if p.CastlingAvailabilityQueensSide(col) {
 		moves = append(moves, move.CastleQueensSide(col))
 	}
 	return moves

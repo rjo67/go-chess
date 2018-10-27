@@ -13,7 +13,7 @@ import (
 	"github.com/rjo67/chess/square"
 )
 
-func TestSizeOfPosition(t *testing.T) {
+func TestSize(t *testing.T) {
 	posn, err := ParseFen("2K2r2/4P3/8/1Q6/8/8/8/3k4 w - - 0 1")
 	if err != nil {
 		t.Fatalf("error parsing fen: %s", err)
@@ -366,11 +366,11 @@ func TestCastling(t *testing.T) {
 	if m.OpponentCouldCastleBeforeMove(true) || !m.OpponentCouldCastleBeforeMove(false) {
 		t.Fatalf("castling flags wrong")
 	}
-	if posn.CastlingAvailability(colour.Black, false) {
+	if posn.CastlingAvailabilityQueensSide(colour.Black) {
 		t.Fatalf("castling flags wrong")
 	}
 	posn.UnmakeMove(m)
-	if !posn.CastlingAvailability(colour.Black, false) {
+	if !posn.CastlingAvailabilityQueensSide(colour.Black) {
 		t.Fatalf("castling flags wrong")
 	}
 	m = move.New(colour.White, square.G6, square.H8, piece.KNIGHT)
@@ -379,11 +379,11 @@ func TestCastling(t *testing.T) {
 	if !m.OpponentCouldCastleBeforeMove(true) || m.OpponentCouldCastleBeforeMove(false) {
 		t.Fatalf("castling flags wrong")
 	}
-	if posn.CastlingAvailability(colour.Black, true) {
+	if posn.CastlingAvailabilityKingsSide(colour.Black) {
 		t.Fatalf("castling flags wrong")
 	}
 	posn.UnmakeMove(m)
-	if !posn.CastlingAvailability(colour.Black, true) {
+	if !posn.CastlingAvailabilityKingsSide(colour.Black) {
 		t.Fatalf("castling flags wrong")
 	}
 }

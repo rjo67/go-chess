@@ -81,16 +81,16 @@ func TestField3(t *testing.T) {
 	if err != nil {
 		t.Errorf("unexpected error: %s", err.Error())
 	} else {
-		if !posn.CastlingAvailability(colour.White, true) {
+		if !posn.CastlingAvailabilityKingsSide(colour.White) {
 			t.Errorf("expected kings-side castling for white")
 		}
-		if posn.CastlingAvailability(colour.White, false) {
+		if posn.CastlingAvailabilityQueensSide(colour.White) {
 			t.Errorf("did not expect queens-side castling for white")
 		}
-		if posn.CastlingAvailability(colour.Black, true) {
+		if posn.CastlingAvailabilityKingsSide(colour.Black) {
 			t.Errorf("did not expect kings-side castling for black")
 		}
-		if !posn.CastlingAvailability(colour.Black, false) {
+		if !posn.CastlingAvailabilityQueensSide(colour.Black) {
 			t.Errorf("expected queens-side castling for black")
 		}
 	}
@@ -98,16 +98,16 @@ func TestField3(t *testing.T) {
 	if err != nil {
 		t.Errorf("unexpected error: %s", err.Error())
 	} else {
-		if posn.CastlingAvailability(colour.White, true) {
+		if posn.CastlingAvailabilityKingsSide(colour.White) {
 			t.Errorf("did not expect kings-side castling for white")
 		}
-		if posn.CastlingAvailability(colour.White, false) {
+		if posn.CastlingAvailabilityQueensSide(colour.White) {
 			t.Errorf("did not expect queens-side castling for white")
 		}
-		if posn.CastlingAvailability(colour.Black, true) {
+		if posn.CastlingAvailabilityKingsSide(colour.Black) {
 			t.Errorf("did not expect kings-side castling for black")
 		}
-		if posn.CastlingAvailability(colour.Black, false) {
+		if posn.CastlingAvailabilityQueensSide(colour.Black) {
 			t.Errorf("did not queens-side castling for black")
 		}
 	}
