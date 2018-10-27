@@ -34,6 +34,51 @@ func TestMove(t *testing.T) {
 	}
 }
 
+func TestPromotion(t *testing.T) {
+	m := NewPromotion(colour.White, square.A7, square.A8, piece.KNIGHT)
+	if m.PromotedPiece() != piece.KNIGHT {
+		t.Fatalf("promoted piece incorrect: " + m.String())
+	}
+	m = NewPromotion(colour.White, square.A7, square.A8, piece.QUEEN)
+	if m.PromotedPiece() != piece.QUEEN {
+		t.Fatalf("promoted piece incorrect: " + m.String())
+	}
+	m = NewPromotionCapture(colour.White, square.A7, square.A8, piece.ROOK, piece.QUEEN)
+	if m.PromotedPiece() != piece.ROOK {
+		t.Fatalf("promoted piece incorrect: " + m.String())
+	}
+	m = NewPromotionCapture(colour.White, square.A7, square.A8, piece.BISHOP, piece.QUEEN)
+	if m.PromotedPiece() != piece.BISHOP {
+		t.Fatalf("promoted piece incorrect: " + m.String())
+	}
+}
+func TestPieceType(t *testing.T) {
+	m := New(colour.White, square.A7, square.A8, piece.PAWN)
+	if m.PieceType() != piece.PAWN {
+		t.Fatalf("piece incorrect: " + m.String())
+	}
+	m = New(colour.White, square.A7, square.A8, piece.ROOK)
+	if m.PieceType() != piece.ROOK {
+		t.Fatalf("piece incorrect: " + m.String())
+	}
+	m = New(colour.White, square.A7, square.A8, piece.KNIGHT)
+	if m.PieceType() != piece.KNIGHT {
+		t.Fatalf("piece incorrect: " + m.String())
+	}
+	m = New(colour.White, square.A7, square.A8, piece.BISHOP)
+	if m.PieceType() != piece.BISHOP {
+		t.Fatalf("piece incorrect: " + m.String())
+	}
+	m = New(colour.White, square.A7, square.A8, piece.QUEEN)
+	if m.PieceType() != piece.QUEEN {
+		t.Fatalf("piece incorrect: " + m.String())
+	}
+	m = New(colour.White, square.A7, square.A8, piece.KING)
+	if m.PieceType() != piece.KING {
+		t.Fatalf("piece incorrect: " + m.String())
+	}
+}
+
 func TestCastlingBits(t *testing.T) {
 	m := New(colour.White, square.A5, square.B7, piece.KNIGHT)
 	if m.CouldCastleBeforeMove(true) {
