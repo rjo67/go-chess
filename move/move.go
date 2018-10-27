@@ -11,21 +11,35 @@ import (
 )
 
 // various masks to access bits in 'castlingInfo'
-var myColourKingssideMask int32 = 0x1
+var myColourKingssideMask uint32 = 0x1
 var myColourQueenssideMask = myColourKingssideMask << 1
-var opponentsColourKingssideMask int32 = 0x4
+var opponentsColourKingssideMask uint32 = 0x4
 var opponentsColourQueenssideMask = opponentsColourKingssideMask << 1
 
-// Move stores information about a move
+var fromSquareMask uint32 = 0x3F                                  // bits 1-6
+var toSquareMask uint32 = 0xFC0                                   // bits 7-12
+var castlingKingssideMask uint32 = 0x1000                         // bit 13
+var castlingQueenssideMask = castlingKingssideMask << 1           // bit 14
+var castlingMask = castlingKingssideMask | castlingQueenssideMask // 13 or 14
+var enpassantMask = castlingQueenssideMask << 1                   // bit 15
+var promotionMask = enpassantMask << 1                            // bit 16
+var promotionPieceMask uint32 = 0x30000                           // bit 17..18
+
+// Move stores information about a move.
+// info: bits 1..6  'from' square   (0..63)
+//       bits 7..12 'to' square     (0..63)
+//       bit 13-14 if the move was castles: King-side (1), Queen-side (2)
+//       bit 15 if the move was enpassant
+//       bit 16 if the move was promotion
+//       bit 17-18 promotion piece type
 //
 // Castling info is stored in the int 'castlingInfo':
 //   Bit 1, 2: whether could castle kingsside/queensside before making this move (mask: myColourKingssideMask, myColourQueenssideMask)
 //   Bit 3, 4: whether OPPONENT could castle kingsside/queenside before making this move (mask: opponentsColourKingssideMask, opponentsColourQueensssideMask)
 type Move struct {
 	pieceType                 piece.Piece    // piece making the move
-	from, to                  square.Square  // from and to squares
-	castle                    int32          // set if castles (mask: myColourKingssideMask, myColourQueenssideMask)
-	castlingInfo              int32          // stores if we or opponent could castle before making this move. See description above (set during posn.MakeMove)
+	info                      uint32         // info about the move (see above)
+	castlingInfo              uint32         // stores if we or opponent could castle before making this move. See description above (set during posn.MakeMove)
 	promotedPiece             *piece.Piece   // set if promotion
 	capturedPiece             *piece.Piece   // set if capture
 	enpassantPawnRealLocation *bitset.BitSet // set if e.p., contains the 'real' square where the pawn was, e.g. move.To()==E6, enpassantPawnRealLocation==E5
@@ -34,7 +48,10 @@ type Move struct {
 
 // New creates a new non-capture move
 func New(col colour.Colour, from, to square.Square, pieceType piece.Piece) Move {
-	m := Move{from: from, to: to, pieceType: pieceType}
+	m := Move{pieceType: pieceType}
+	// squares are stored in 6 bits 0..63
+	m.info |= uint32((from - 1))
+	m.info |= uint32((to - 1) << 6)
 	if pieceType == piece.PAWN {
 		if col == colour.White && from.Rank() == 2 && to.Rank() == 4 {
 			sq := square.Square(from + 8)
@@ -64,6 +81,7 @@ func NewEpCapture(col colour.Colour, from, to square.Square) Move {
 	}
 	enpassantPawnRealLocation := bitset.NewFromSquares(square.Square(int(to) + shift))
 	m := NewCapture(col, from, to, piece.PAWN, piece.PAWN)
+	m.info |= enpassantMask
 	m.enpassantPawnRealLocation = &enpassantPawnRealLocation
 	return m
 }
@@ -71,6 +89,7 @@ func NewEpCapture(col colour.Colour, from, to square.Square) Move {
 // NewPromotion creates a new promotion move
 func NewPromotion(col colour.Colour, from, to square.Square, toPiece piece.Piece) Move {
 	m := New(col, from, to, piece.PAWN)
+	m.info |= promotionMask
 	m.promotedPiece = &toPiece
 	return m
 }
@@ -78,6 +97,7 @@ func NewPromotion(col colour.Colour, from, to square.Square, toPiece piece.Piece
 // NewPromotionCapture creates a new promotion move with capture
 func NewPromotionCapture(col colour.Colour, from, to square.Square, toPiece piece.Piece, capturedPieceType piece.Piece) Move {
 	m := NewCapture(col, from, to, piece.PAWN, capturedPieceType)
+	m.info |= promotionMask
 	m.promotedPiece = &toPiece
 	return m
 }
@@ -90,7 +110,7 @@ func CastleKingsSide(col colour.Colour) Move {
 	} else {
 		m = New(col, square.E8, square.G8, piece.KING)
 	}
-	m.castle |= myColourKingssideMask
+	m.info |= castlingKingssideMask
 	return m
 }
 
@@ -102,7 +122,7 @@ func CastleQueensSide(col colour.Colour) Move {
 	} else {
 		m = New(col, square.E8, square.C8, piece.KING)
 	}
-	m.castle |= myColourQueenssideMask
+	m.info |= castlingQueenssideMask
 	return m
 }
 
@@ -110,26 +130,26 @@ func CastleQueensSide(col colour.Colour) Move {
 func (m Move) IsKingsMove() bool { return m.pieceType == piece.KING }
 
 // IsCastles returns true if this move was "castles"
-func (m Move) IsCastles() bool { return m.castle != 0 }
+func (m Move) IsCastles() bool { return m.info&castlingMask != 0 }
 
 // IsKingsSideCastles returns true if this move was kings-side "castles"
 func (m Move) IsKingsSideCastles() bool {
-	return m.castle&myColourKingssideMask == myColourKingssideMask
+	return m.info&castlingKingssideMask == castlingKingssideMask
 }
 
 // IsQueensSideCastles returns true if this move was queens-side "castles"
 func (m Move) IsQueensSideCastles() bool {
-	return m.castle&myColourQueenssideMask == myColourQueenssideMask
+	return m.info&castlingQueenssideMask == castlingQueenssideMask
 }
 
 // IsCapture returns true if this move was a capture
 func (m Move) IsCapture() bool { return m.capturedPiece != nil }
 
 // IsPromotion returns true if this move was a pawn promotion
-func (m Move) IsPromotion() bool { return m.promotedPiece != nil }
+func (m Move) IsPromotion() bool { return m.info&promotionMask == promotionMask }
 
 // IsEnpassant returns true if this move was an enpassant capture
-func (m Move) IsEnpassant() bool { return m.enpassantPawnRealLocation != nil }
+func (m Move) IsEnpassant() bool { return m.info&enpassantMask == enpassantMask }
 
 // EnpassantPawnRealLocation returns a bitset containing the square where the opponents pawn really was for an enpassant capture
 func (m Move) EnpassantPawnRealLocation() bitset.BitSet { return *m.enpassantPawnRealLocation }
@@ -147,10 +167,10 @@ func (m Move) CapturedPiece() piece.Piece { return *m.capturedPiece }
 func (m Move) PromotedPiece() piece.Piece { return *m.promotedPiece }
 
 // From returns the move's source square
-func (m Move) From() square.Square { return m.from }
+func (m Move) From() square.Square { return square.Square(m.info&fromSquareMask + 1) } // mask bits 1..6
 
 // To returns the move's target square
-func (m Move) To() square.Square { return m.to }
+func (m Move) To() square.Square { return square.Square((m.info&toSquareMask)>>6 + 1) } // mask bits 7..12
 
 // PieceType returns the move's piece
 func (m Move) PieceType() piece.Piece { return m.pieceType }
@@ -196,13 +216,13 @@ func (m Move) String() string {
 		return "O-O-O"
 	}
 	var promotion string
-	if m.promotedPiece != nil {
+	if m.IsPromotion() {
 		promotion = fmt.Sprintf("=%s", m.promotedPiece.String(colour.White))
 	}
 	if m.capturedPiece != nil {
-		return fmt.Sprintf("%sx%s%s", m.from.String(), m.to.String(), promotion)
+		return fmt.Sprintf("%sx%s%s", m.From().String(), m.To().String(), promotion)
 	}
-	return fmt.Sprintf("%s%s%s", m.from.String(), m.to.String(), promotion)
+	return fmt.Sprintf("%s%s%s", m.From().String(), m.To().String(), promotion)
 }
 
 // Search2 implements the algorithm as described in secition 2 of http://www.craftychess.com/hyatt/bitmaps.html

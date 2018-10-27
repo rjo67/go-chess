@@ -17,6 +17,23 @@ func TestSize(t *testing.T) {
 	fmt.Printf("size of move: %d bytes\n", reflect.TypeOf(m).Size())
 }
 
+func TestMove(t *testing.T) {
+	m := New(colour.White, square.A5, square.B7, piece.KNIGHT)
+	if m.From() != square.A5 {
+		t.Fatalf("'from' square incorrect: " + m.String())
+	}
+	if m.To() != square.B7 {
+		t.Fatalf("'to' square incorrect: " + m.String())
+	}
+	m = New(colour.White, square.H1, square.A8, piece.ROOK)
+	if m.From() != square.H1 {
+		t.Fatalf("'from' square incorrect: " + m.String())
+	}
+	if m.To() != square.A8 {
+		t.Fatalf("'to' square incorrect: " + m.String())
+	}
+}
+
 func TestCastlingBits(t *testing.T) {
 	m := New(colour.White, square.A5, square.B7, piece.KNIGHT)
 	if m.CouldCastleBeforeMove(true) {
